@@ -97,6 +97,14 @@
   <h2>2 · Foto lembar jawaban</h2>
   <input type="file" id="berkas" accept="image/*" multiple>
   <div class="hint">Bisa memilih beberapa foto sekaligus. Pastikan keempat kotak hitam di sudut kertas ikut terfoto.</div>
+  <div class="row" style="margin-top:14px">
+    <div><label>Jenis lembar jawaban (sesuaikan dengan template yang dicetak)</label>
+      <select id="varian" style="width:100%;background:var(--ink);color:var(--text);border:1px solid var(--line);
+              border-radius:6px;padding:10px;font-size:14px;font-family:inherit">
+        <option value="5" selected>5 pilihan (A sampai E)</option>
+        <option value="4">4 pilihan (A sampai D)</option>
+      </select></div>
+  </div>
   <label style="display:flex;align-items:center;gap:9px;margin-top:12px;color:var(--text);font-size:14px;cursor:pointer">
     <input type="checkbox" id="autoAmbang" checked style="width:17px;height:17px;accent-color:var(--accent)">
     Sesuaikan ambang otomatis pada setiap foto
@@ -207,14 +215,19 @@ const TPL = {
   markers: [[1.5,1.5],[19.5,1.5],[1.5,28.2],[19.5,28.2]],   // TL, TR, BL, BR
   orient:  [1.3,2.7],                                        // penanda orientasi
   putih:   [[6,25.5],[10.5,26.5],[15,25.5]],                 // acuan kertas kosong
-  dxa: 567, blocks: [1383,4543,7703], numW: 520, optW: 460,
-  rows: 17, gridTop: 9.68, rowH: 0.806
+  dxa: 567, numW: 520, optW: 460, rows: 17, gridTop: 9.68, rowH: 0.806,
+  varian: {
+    5: {nOpt:5, x0:[3.3563, 8.9295, 14.5026]},
+    4: {nOpt:4, x0:[4.5732, 9.3351, 14.0970]}
+  }
 };
 const OPT = ['A','B','C','D','E'];
-const GEO_BAWAAN = {
-  gridTop: TPL.gridTop, rowH: TPL.rowH,
-  blok: TPL.blocks.map(b => ({x0:(b+TPL.numW)/TPL.dxa, lebar:TPL.optW/TPL.dxa}))
-};
+function geoBawaan(nOpt){
+  const v = TPL.varian[nOpt] || TPL.varian[5];
+  return {nOpt: v.nOpt, gridTop: TPL.gridTop, rowH: TPL.rowH,
+          blok: v.x0.map(x => ({x0:x, lebar: TPL.optW/TPL.dxa}))};
+}
+const GEO_BAWAAN = geoBawaan(5);
 function boxCm(n, i, geo){
   const g = geo || GEO_BAWAAN;
   const b = Math.floor((n-1)/TPL.rows), r = (n-1)%TPL.rows;
@@ -416,7 +429,7 @@ function warpFlat(gray, w, h, pts, S){
    ke bawah dan menggeser kotak paling bawah hingga lebih dari setengah baris,
    sehingga posisi kisi diukur ulang langsung dari lembarnya.
    ======================================================================= */
-function cariGaris(flat, ow, oh, S, arah, a0, a1, b0, b1){
+function cariGaris(flat, ow, oh, S, arah, a0, a1, b0, b1, k){
   const prof = [];
   const p0 = Math.round(a0*S), p1 = Math.round(a1*S);
   const q0 = Math.round(b0*S), q1 = Math.round(b1*S);
@@ -430,7 +443,7 @@ function cariGaris(flat, ow, oh, S, arah, a0, a1, b0, b1){
   }
   const urut = prof.slice().sort((x,y)=>x-y);
   const latar = urut[Math.floor(urut.length*0.80)];
-  const batas = latar*0.82;
+  const batas = latar*(k || 0.82);
   const garis = []; let run = null;
   prof.forEach((v,i)=>{
     if(v < batas){ (run = run || []).push(p0+i); }
@@ -481,38 +494,46 @@ function nilaiKisi(flat, ow, oh, S, awal, jarak, jumlah, arah, q0, q1){
   return c ? tot/c : 255;
 }
 
-function selaraskanKisi(flat, ow, oh, S){
-  const geo = {gridTop:GEO_BAWAAN.gridTop, rowH:GEO_BAWAAN.rowH,
-               blok: GEO_BAWAAN.blok.map(b=>({...b})), diselaraskan:false};
-  const B = GEO_BAWAAN.blok;
+function selaraskanKisi(flat, ow, oh, S, nOpt){
+  const DEF = geoBawaan(nOpt);
+  const geo = {nOpt: DEF.nOpt, gridTop:DEF.gridTop, rowH:DEF.rowH,
+               blok: DEF.blok.map(b=>({...b})), diselaraskan:false};
+  const B = DEF.blok;
 
   // --- arah mendatar: garis kisi tampak pada ketiga blok, coretan hanya pada sebagian ---
-  const gh = [];
-  B.forEach(bb => gh.push(...cariGaris(flat, ow, oh, S, 'h', 8.6, 24.5, bb.x0, bb.x0+5*bb.lebar)));
-  gh.sort((a,b)=>a-b);
-  const gab = [];
-  for(const g of gh){
-    if(gab.length && g - gab[gab.length-1].s/gab[gab.length-1].n < 0.10){
-      const t = gab[gab.length-1]; t.s += g; t.n++;
-    } else gab.push({s:g, n:1});
+  const xa = B[0].x0, xb = B[0].x0 + nOpt*B[0].lebar;
+  let terbaikH = {nilai: nilaiKisi(flat, ow, oh, S, DEF.gridTop, DEF.rowH, 18, 'h', xa, xb), fit:null};
+  for(const k of [0.85, 0.82]){
+    const gh = [];
+    B.forEach(bb => gh.push(...cariGaris(flat, ow, oh, S, 'h', 8.6, 24.5, bb.x0, bb.x0+nOpt*bb.lebar, k)));
+    gh.sort((a,b)=>a-b);
+    const gab = [];
+    for(const g of gh){
+      if(gab.length && g - gab[gab.length-1].s/gab[gab.length-1].n < 0.10){
+        const t = gab[gab.length-1]; t.s += g; t.n++;
+      } else gab.push({s:g, n:1});
+    }
+    const garisH = gab.filter(t=>t.n>=2).map(t=>t.s/t.n);
+    const fh = cocokkanDeret(garisH, 18, DEF.rowH, 0.07);
+    if(!fh || fh.jarak <= 0.65 || fh.jarak >= 0.95 || fh.awal <= 9.0 || fh.awal >= 10.5) continue;
+    const nilai = nilaiKisi(flat, ow, oh, S, fh.awal, fh.jarak, 18, 'h', xa, xb);
+    if(nilai < terbaikH.nilai - 4) terbaikH = {nilai, fit:fh};
   }
-  const garisH = gab.filter(t=>t.n>=2).map(t=>t.s/t.n);
-  const fh = cocokkanDeret(garisH, 18, GEO_BAWAAN.rowH, 0.07);
-  if(fh && fh.jarak > 0.65 && fh.jarak < 0.95 && fh.awal > 9.0 && fh.awal < 10.5){
-    const nBaru = nilaiKisi(flat, ow, oh, S, fh.awal, fh.jarak, 18, 'h', B[0].x0, B[0].x0+5*B[0].lebar);
-    const nLama = nilaiKisi(flat, ow, oh, S, GEO_BAWAAN.gridTop, GEO_BAWAAN.rowH, 18, 'h', B[0].x0, B[0].x0+5*B[0].lebar);
-    if(nBaru < nLama - 2){ geo.gridTop = fh.awal; geo.rowH = fh.jarak; geo.diselaraskan = true; }
+  if(terbaikH.fit){
+    geo.gridTop = terbaikH.fit.awal; geo.rowH = terbaikH.fit.jarak; geo.diselaraskan = true;
   }
 
   // --- arah tegak, diukur per blok ---
   const yA = geo.gridTop, yB = geo.gridTop + 6*geo.rowH;
   B.forEach((bb, k) => {
-    const gv = cariGaris(flat, ow, oh, S, 'v', bb.x0-0.35, bb.x0+5*bb.lebar+0.35, yA, yB);
-    const fv = cocokkanDeret(gv, 6, bb.lebar, 0.08);
-    if(!fv || fv.jarak < bb.lebar*0.88 || fv.jarak > bb.lebar*1.15 || Math.abs(fv.awal-bb.x0) > 0.4) return;
-    const nBaru = nilaiKisi(flat, ow, oh, S, fv.awal, fv.jarak, 6, 'v', yA, yB);
-    const nLama = nilaiKisi(flat, ow, oh, S, bb.x0, bb.lebar, 6, 'v', yA, yB);
-    if(nBaru < nLama - 2) geo.blok[k] = {x0: fv.awal, lebar: fv.jarak};
+    let acuan = nilaiKisi(flat, ow, oh, S, bb.x0, bb.lebar, nOpt+1, 'v', yA, yB);
+    for(const t of [0.85, 0.82]){
+      const gv = cariGaris(flat, ow, oh, S, 'v', bb.x0-0.35, bb.x0+nOpt*bb.lebar+0.35, yA, yB, t);
+      const fv = cocokkanDeret(gv, nOpt+1, bb.lebar, 0.08);
+      if(!fv || fv.jarak < bb.lebar*0.88 || fv.jarak > bb.lebar*1.15 || Math.abs(fv.awal-bb.x0) > 0.4) continue;
+      const nilai = nilaiKisi(flat, ow, oh, S, fv.awal, fv.jarak, nOpt+1, 'v', yA, yB);
+      if(nilai < acuan - 4){ acuan = nilai; geo.blok[k] = {x0: fv.awal, lebar: fv.jarak}; }
+    }
   });
   return geo;
 }
@@ -559,11 +580,14 @@ function prosesFoto(gray, w, h, opt){
   const win = Math.max(31, sOut|1);
   const fb = adaptiveInv(blur5(flat, ow, oh), ow, oh, win, 10);
 
-  const geo = selaraskanKisi(flat, ow, oh, sOut);
+  /* Pilih varian lembar. Pada mode otomatis, kedua tata letak diuji dan yang garis
+     kotaknya paling pas dengan cetakan yang dipilih. */
+  const geo = selaraskanKisi(flat, ow, oh, sOut, (opt.nOpt === 4) ? 4 : 5);
+  const nOptPakai = geo.nOpt;
   const rasioSemua = [], garisSemua = [];
   for(let n=1;n<=50;n++){
     const rat = [], garis = [];
-    for(let i=0;i<5;i++){
+    for(let i=0;i<nOptPakai;i++){
       const [x0,y0,x1,y1] = boxCm(n,i,geo);
       const ax = Math.round((x0+opt.inset)*sOut), bx = Math.round((x1-opt.inset)*sOut);
       const ay = Math.round((y0+opt.inset)*sOut), by = Math.round((y1-opt.inset)*sOut);
@@ -640,7 +664,8 @@ function prosesFoto(gray, w, h, opt){
     const rat = ukur[n-1], mentah = rasioSemua[n-1], garis = garisSemua[n-1];
     const batasTipis = ambangPakai * (opt.faktorTipis ?? 0.65);
     const minBarisBatal = opt.minBarisBatal ?? 0.20;
-    const terisi = [0,1,2,3,4].filter(i => rat[i] >= ambangPakai);
+    const idxOpt = Array.from({length:nOptPakai}, (_,k)=>k);
+    const terisi = idxOpt.filter(i => rat[i] >= ambangPakai);
     /* Sebuah kotak hanya dianggap dibatalkan bila pada nomor yang sama masih ada kotak
        bercoretan lain yang bersih dari penanda pembatalan. Dengan begitu satu-satunya
        coretan pada sebuah nomor tidak pernah terbuang hanya karena pulpennya tebal. */
@@ -662,7 +687,7 @@ function prosesFoto(gray, w, h, opt){
       pilih = dibatalkan[0]; top = rat[pilih]; sec = 0;
       status = 'ragu'; jwb = null;
     } else {
-      const urut = [0,1,2,3,4].sort((a,b)=>rat[b]-rat[a]);
+      const urut = idxOpt.slice().sort((a,b)=>rat[b]-rat[a]);
       pilih = urut[0]; top = rat[pilih]; sec = rat[urut[1]];
       status = (top < batasTipis) ? 'kosong' : 'tipis'; jwb = null;
     }
@@ -685,9 +710,10 @@ function bacaKunci(){
   const t = $('kunci').value.trim().toUpperCase();
   if(!t){ $('kunciInfo').value = 'belum diisi'; return null; }
   const k = {};
-  const pasang = [...t.matchAll(/(\d{1,2})\s*[.:\-]?\s*([A-E])/g)];
+  const hurufSah = ($('varian').value==='4') ? 'A-D' : 'A-E';
+  const pasang = [...t.matchAll(new RegExp('(\\d{1,2})\\s*[.:\\-]?\\s*(['+hurufSah+'])','g'))];
   if(pasang.length >= 5){ for(const m of pasang) k[+m[1]] = m[2]; }
-  else { const hur = t.replace(/[^A-E]/g,''); for(let i=0;i<hur.length && i<50;i++) k[i+1] = hur[i]; }
+  else { const hur = t.replace(new RegExp('[^'+hurufSah+']','g'),''); for(let i=0;i<hur.length && i<50;i++) k[i+1] = hur[i]; }
   const jml = Object.keys(k).length;
   $('kunciInfo').value = jml ? `${jml} nomor terbaca` : 'format tidak dikenali';
   return jml ? k : null;
@@ -717,7 +743,8 @@ $('proses').addEventListener('click', async () => {
   const nilai = {benar: parseFloat($('bobot').value)||0,
                  salah: parseFloat($('penalti').value)||0,
                  kosong: parseFloat($('kosongVal').value)||0};
-  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked};
+  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked,
+          nOpt: +$('varian').value};
   const maxDim = +$('s4').value;
   $('proses').disabled = true; $('proses').textContent = 'Memproses...';
   hasilSemua = [];
@@ -861,6 +888,7 @@ function tampil(i){
 Waktu proses    : ${r.ms} ms
 Kandidat penanda: ${r.kandidat}   susunan diuji: ${r.dicoba}   nilai kecocokan: ${r.skor}
 Ambang dipakai  : ${r.ambangPakai.toFixed(3)}  (${r.sumber})${r.info ? '  [celah '+r.info.celah+', '+r.info.jumlahAtas+' kotak bercoretan]' : ''}
+Jenis lembar    : ${r.geo.nOpt} pilihan
 Kisi kotak      : ${r.geo.diselaraskan ? 'diselaraskan ke lembar (tinggi baris '+r.geo.rowH.toFixed(3)+' cm, mulai '+r.geo.gridTop.toFixed(2)+' cm)' : 'memakai peta bawaan'}
 Penyetelan lain : selisih ${$('s2').value} · jarak tepi ${$('s3').value} cm · zona tipis ${$('s6').value}`;
 }
@@ -995,7 +1023,8 @@ async function ambilFoto(){
   const nilai = {benar: parseFloat($('bobot').value)||0,
                  salah: parseFloat($('penalti').value)||0,
                  kosong: parseFloat($('kosongVal').value)||0};
-  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked};
+  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked,
+          nOpt: +$('varian').value};
   const t0 = performance.now();
   const r = prosesFoto(gray, w, h, opt);
   const jam = new Date().toLocaleTimeString('id-ID');
@@ -1016,6 +1045,7 @@ window.addEventListener('beforeunload', tutupKamera);
    ======================================================================= */
 const BAWAAN = {s1:0.12, s2:0.06, s3:0.14, s4:1400, s5:60, s6:0.65, s7:0.20};
 const KUNCI_SLIDER = ['s1','s2','s3','s4','s5','s6','s7'];
+const LAIN = ['varian'];
 const LABEL_V = {s1:'v1', s2:'v2', s3:'v3', s4:'v4', s5:'v5', s6:'v6', s7:'v7'};
 
 function setSlider(id, nilai){
@@ -1024,7 +1054,8 @@ function setSlider(id, nilai){
 }
 function opsiSekarang(){
   return {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value,
-          sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked};
+          sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked,
+          nOpt: +$('varian').value};
 }
 function catatKalibrasi(teks, gagal){
   const el = $('calLog');
@@ -1090,6 +1121,7 @@ $('jalankanKalibrasi').addEventListener('click', async () => {
 
 $('simpanProfil').addEventListener('click', () => {
   const profil = {}; KUNCI_SLIDER.forEach(k => profil[k] = +$(k).value);
+  LAIN.forEach(k => profil[k] = $(k).value);
   profil.dibuat = new Date().toISOString();
   const url = URL.createObjectURL(new Blob([JSON.stringify(profil,null,2)], {type:'application/json'}));
   const a = document.createElement('a');
@@ -1104,6 +1136,7 @@ $('muatProfil').addEventListener('change', async e => {
     const p = JSON.parse(await f.text());
     let n = 0;
     KUNCI_SLIDER.forEach(k => { if(typeof p[k] === 'number'){ setSlider(k, p[k]); n++; } });
+    LAIN.forEach(k => { if(p[k] !== undefined){ $(k).value = p[k]; n++; } });
     catatKalibrasi(`Profil dimuat, ${n} nilai penyetelan diterapkan.`);
   }catch(ex){ catatKalibrasi('Berkas profil tidak dapat dibaca: ' + ex.message, true); }
 });
