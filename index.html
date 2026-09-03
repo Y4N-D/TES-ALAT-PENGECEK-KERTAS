@@ -149,7 +149,7 @@
       <label>Rincian per nomor</label>
       <div style="max-height:520px;overflow:auto">
         <table id="tabel"><thead><tr><th>No</th><th>Baca</th><th>Kunci</th><th>Status</th>
-          <th>Dibatalkan</th><th>Relatif</th><th>Mentah</th></tr></thead><tbody></tbody></table>
+          <th>Coretan</th><th>Dibatalkan</th><th>Relatif</th></tr></thead><tbody></tbody></table>
       </div>
     </div>
   </div>
@@ -185,8 +185,10 @@
         <input type="range" id="s2" min="0.02" max="0.30" step="0.01" value="0.06"></div>
       <div class="slider"><label>Zona peringatan coretan tipis <span class="v" id="v6">0.65</span></label>
         <input type="range" id="s6" min="0.40" max="1.00" step="0.05" value="0.65"></div>
-      <div class="slider"><label>Kepekaan penanda pembatalan "=" <span class="v" id="v7">0.20</span></label>
-        <input type="range" id="s7" min="0.08" max="0.50" step="0.02" value="0.20"></div>
+      <div class="slider"><label>Lebar goresan mendatar penanda "=" <span class="v" id="v7">0.55</span></label>
+        <input type="range" id="s7" min="0.30" max="0.95" step="0.05" value="0.55"></div>
+      <div class="slider"><label>Selisih bukti minimum antar coretan <span class="v" id="v8">0.10</span></label>
+        <input type="range" id="s8" min="0.02" max="0.40" step="0.02" value="0.10"></div>
     </div>
     <div>
       <div class="slider"><label>Jarak aman dari tepi kotak (cm) <span class="v" id="v3">0.14</span></label>
@@ -602,20 +604,19 @@ function prosesFoto(gray, w, h, opt){
         c += lebar;
       }
       rat.push(c ? s/c : 0);
-      /* Penanda lambang pembatalan '=': hitung berapa banyak baris di dalam kotak yang
-         tergores lebih dari separuh lebarnya. Tanda silang hanya sesekali mencapainya di
-         titik perpotongan, sedangkan dua garis mendatar lambang '=' mencapainya berturut-turut.
-         Ambang gelap diambil relatif terhadap bagian paling terang di dalam kotak itu sendiri,
-         agar tidak terpengaruh bayangan maupun perbedaan pencahayaan antar bagian lembar. */
+      /* Penanda lambang pembatalan '=': ukur baris paling lebar tergores di dalam kotak.
+         Tanda silang tidak pernah menggores satu baris penuh karena kedua goresannya
+         diagonal, sedangkan garis mendatar lambang '=' menggores baris hampir penuh.
+         Ambang gelap diambil relatif terhadap bagian paling terang di dalam kotak itu
+         sendiri, agar tidak terpengaruh bayangan maupun beda pencahayaan antar bagian lembar. */
       const batasGelap = terang * 0.72;
-      let barisLebar = 0, jumlahBaris = 0;
+      let barisTerlebar = 0;
       for(let y=ay;y<by;y++){
         let d = 0;
         for(let x=ax;x<bx;x++){ if(flat[y*ow+x] < batasGelap) d++; }
-        jumlahBaris++;
-        if(lebar && d/lebar >= 0.55) barisLebar++;
+        if(lebar && d/lebar > barisTerlebar) barisTerlebar = d/lebar;
       }
-      garis.push(jumlahBaris ? barisLebar/jumlahBaris : 0);
+      garis.push(barisTerlebar);
     }
     rasioSemua.push(rat); garisSemua.push(garis);
   }
@@ -650,7 +651,11 @@ function prosesFoto(gray, w, h, opt){
     }
     if(terbaik){
       const celah = terbaik.atasMin - terbaik.bawahMaks;
-      const usul = (terbaik.atasMin + terbaik.bawahMaks)/2;
+      /* Ambang ditambatkan pada kelompok kotak KOSONG, bukan di tengah celah.
+         Bila sebuah lembar memuat banyak jawaban yang dibatalkan, kotak yang dibatalkan
+         jauh lebih pekat sehingga titik tengah bisa terangkat melewati coretan biasa dan
+         membuat coretan pengganti tidak terbaca sama sekali. */
+      const usul = Math.min((terbaik.atasMin + terbaik.bawahMaks)/2, terbaik.bawahMaks + 0.08);
       // Syarat kelayakan: celah cukup lebar, jumlah coretan masuk akal, dan ambang tidak terlalu rendah.
       const layak = celah >= 0.06 && terbaik.jumlahAtas >= 8 && terbaik.jumlahAtas <= 130 && usul >= 0.06;
       info = {celah:+celah.toFixed(3), jumlahAtas:terbaik.jumlahAtas, usul:+usul.toFixed(3), layak};
@@ -665,35 +670,48 @@ function prosesFoto(gray, w, h, opt){
     const batasTipis = ambangPakai * (opt.faktorTipis ?? 0.65);
     const minBarisBatal = opt.minBarisBatal ?? 0.20;
     const idxOpt = Array.from({length:nOptPakai}, (_,k)=>k);
-    const terisi = idxOpt.filter(i => rat[i] >= ambangPakai);
-    /* Sebuah kotak hanya dianggap dibatalkan bila pada nomor yang sama masih ada kotak
-       bercoretan lain yang bersih dari penanda pembatalan. Dengan begitu satu-satunya
-       coretan pada sebuah nomor tidak pernah terbuang hanya karena pulpennya tebal. */
-    const bertanda = terisi.filter(i => garis[i] >= minBarisBatal);
-    const bersih   = terisi.filter(i => garis[i] < minBarisBatal);
-    const dibatalkan = bersih.length ? bertanda : [];
-    const sah = bersih.length ? bersih : terisi;
+    const terisi = idxOpt.filter(i => rat[i] >= ambangPakai).sort((a,b)=>rat[b]-rat[a]);
 
-    let status, jwb, pilih, top, sec;
-    if(sah.length){
-      sah.sort((a,b)=>rat[b]-rat[a]);
-      pilih = sah[0]; top = rat[pilih];
-      sec = sah.length>1 ? rat[sah[1]] : 0;
-      status = (sah.length>1 && (dibatalkan.length===0 || top - sec < opt.selisih)) ? 'ragu' : 'ok';
-      jwb = OPT[pilih];
-    } else if(dibatalkan.length){
-      // seluruh coretan pada nomor ini sudah dibatalkan, jawaban penggantinya tidak ditemukan
-      dibatalkan.sort((a,b)=>rat[b]-rat[a]);
-      pilih = dibatalkan[0]; top = rat[pilih]; sec = 0;
-      status = 'ragu'; jwb = null;
-    } else {
+    let status, jwb, pilih, top, sec, dibatalkan = [];
+    if(terisi.length === 0){
       const urut = idxOpt.slice().sort((a,b)=>rat[b]-rat[a]);
       pilih = urut[0]; top = rat[pilih]; sec = rat[urut[1]];
       status = (top < batasTipis) ? 'kosong' : 'tipis'; jwb = null;
+
+    } else if(terisi.length === 1){
+      // satu coretan saja: selalu dibaca sebagai jawaban, betapa pun tebal pulpennya
+      pilih = terisi[0]; top = rat[pilih]; sec = 0;
+      status = 'ok'; jwb = OPT[pilih];
+
+    } else {
+      /* Lebih dari satu coretan pada satu nomor. Kotak yang dibatalkan memuat tanda silang
+         DITAMBAH lambang '=', sehingga selalu lebih banyak tintanya sekaligus memiliki baris
+         goresan yang lebih lebar daripada coretan pengganti yang hanya berupa tanda silang.
+         Kedua petunjuk itu digabung menjadi satu skor, lalu kotak berskor paling rendah
+         diambil sebagai jawaban akhir peserta. */
+      const skor = {};
+      terisi.forEach(i => { skor[i] = garis[i] + rat[i]; });
+      const urutSkor = terisi.slice().sort((a,b)=>skor[a]-skor[b]);
+      const jawabanAkhir = urutSkor[0];
+      const selisihSkor = skor[urutSkor[1]] - skor[jawabanAkhir];
+      const adaJejakMendatar = garis[urutSkor[urutSkor.length-1]] >= (opt.lebarBatal ?? 0.55);
+
+      pilih = jawabanAkhir; top = rat[pilih]; sec = rat[urutSkor[1]];
+      jwb = OPT[pilih];
+      if(adaJejakMendatar && selisihSkor >= (opt.bedaGaris ?? 0.10)){
+        // bukti pembatalan meyakinkan: sisanya dinyatakan dibatalkan
+        dibatalkan = urutSkor.slice(1);
+        status = 'ok';
+      } else {
+        // bukti lemah: jawaban tetap diisi dengan kemungkinan terkuat, tetapi ditandai
+        dibatalkan = urutSkor.slice(1);
+        status = 'ragu';
+      }
     }
     baca.push({n, jwb, status, pilih,
                top:+top.toFixed(3), sec:+sec.toFixed(3), mentah:+mentah[pilih].toFixed(3),
-               revisi: dibatalkan.length>0, batal: dibatalkan.map(i=>OPT[i]),
+               revisi: dibatalkan.length>0 || (status==='ragu' && terisi.length>1),
+               batal: dibatalkan.map(i=>OPT[i]), ganda: terisi.length,
                garis: garis.map(v=>+v.toFixed(2))});
   }
 
@@ -719,7 +737,7 @@ function bacaKunci(){
   return jml ? k : null;
 }
 $('kunci').addEventListener('input', bacaKunci);
-[['s1','v1'],['s2','v2'],['s3','v3'],['s4','v4'],['s5','v5'],['s6','v6'],['s7','v7']]
+[['s1','v1'],['s2','v2'],['s3','v3'],['s4','v4'],['s5','v5'],['s6','v6'],['s7','v7'],['s8','v8']]
   .forEach(([sid,vid]) => $(sid).addEventListener('input', () => $(vid).textContent = $(sid).value));
 
 $('berkas').addEventListener('change', e => {
@@ -743,7 +761,7 @@ $('proses').addEventListener('click', async () => {
   const nilai = {benar: parseFloat($('bobot').value)||0,
                  salah: parseFloat($('penalti').value)||0,
                  kosong: parseFloat($('kosongVal').value)||0};
-  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked,
+  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, lebarBatal:+$('s7').value, bedaGaris:+$('s8').value, autoAmbang:$('autoAmbang').checked,
           nOpt: +$('varian').value};
   const maxDim = +$('s4').value;
   $('proses').disabled = true; $('proses').textContent = 'Memproses...';
@@ -828,10 +846,15 @@ function tampil(i){
       pitaNomor(b.n, WARNA.batal);
     }
     if(b.status === 'kosong') continue;
-    let jenis = b.status;                                    // ok | ragu | tipis
-    if(r.kunci && r.kunci[b.n] && b.jwb && b.jwb !== r.kunci[b.n]) jenis = 'salah';
+    const keliru = !!(r.kunci && r.kunci[b.n] && b.jwb && b.jwb !== r.kunci[b.n]);
+    const jenis = keliru ? 'salah' : b.status;               // warna kotak
     kotakTandai(b.n, b.pilih, WARNA[jenis], ISI[jenis], b.status === 'tipis');
-    if(jenis !== 'ok'){ perluCek[jenis].push(b.n); pitaNomor(b.n, WARNA[jenis]); }
+    // status pembacaan dan kebenaran jawaban dicatat terpisah agar jumlahnya
+    // selalu cocok dengan kartu ringkasan di atas
+    if(b.status === 'ragu')  perluCek.ragu.push(b.n);
+    if(b.status === 'tipis') perluCek.tipis.push(b.n);
+    if(keliru)               perluCek.salah.push(b.n);
+    if(jenis !== 'ok') pitaNomor(b.n, WARNA[jenis]);
   }
   r.perluCek = perluCek;
 
@@ -867,6 +890,7 @@ function tampil(i){
   if(pc.ragu.length)   daftar.push(`<span style="color:#ff8f00">Perlu dicek:</span> ${pc.ragu.join(', ')}`);
   if(pc.tipis.length)  daftar.push(`<span style="color:#b83ce0">Coretan tipis:</span> ${pc.tipis.join(', ')}`);
   if(pc.revisi.length) daftar.push(`<span style="color:#1470ff">Jawaban diganti:</span> ${pc.revisi.join(', ')}`);
+  if(daftar.length) daftar.push('<span style="color:var(--dim);font-size:12.5px">Satu nomor dapat muncul di lebih dari satu daftar, misalnya nomor yang perlu dicek sekaligus tidak cocok dengan kunci.</span>');
   $('perluCek').innerHTML = daftar.length
     ? daftar.map(d=>`<div style="padding:3px 0">${d}</div>`).join('')
     : '<div style="color:var(--dim)">Seluruh nomor terbaca jelas, tidak ada yang perlu diperiksa manual.</div>';
@@ -881,7 +905,7 @@ function tampil(i){
              : ket==='ragu'  ? 'background:rgba(255,143,0,.12)'
              : ket==='tipis' ? 'background:rgba(184,60,224,.12)' : '';
     return `<tr style="${bg}"><td>${b.n}</td><td>${b.jwb||'–'}</td><td>${k}</td>
-      <td class="${cls}">${ket}</td><td style="color:#4da3ff">${bt}</td><td>${b.top}</td><td style="color:var(--dim)">${b.mentah}</td></tr>`;
+      <td class="${cls}">${ket}</td><td>${b.ganda||0}</td><td style="color:#4da3ff">${bt}</td><td>${b.top}</td></tr>`;
   }).join('');
   log.textContent =
 `Berkas          : ${r.nama}
@@ -1023,7 +1047,7 @@ async function ambilFoto(){
   const nilai = {benar: parseFloat($('bobot').value)||0,
                  salah: parseFloat($('penalti').value)||0,
                  kosong: parseFloat($('kosongVal').value)||0};
-  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked,
+  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, lebarBatal:+$('s7').value, bedaGaris:+$('s8').value, autoAmbang:$('autoAmbang').checked,
           nOpt: +$('varian').value};
   const t0 = performance.now();
   const r = prosesFoto(gray, w, h, opt);
@@ -1043,8 +1067,8 @@ window.addEventListener('beforeunload', tutupKamera);
 /* =======================================================================
    KALIBRASI OTOMATIS & PROFIL
    ======================================================================= */
-const BAWAAN = {s1:0.12, s2:0.06, s3:0.14, s4:1400, s5:60, s6:0.65, s7:0.20};
-const KUNCI_SLIDER = ['s1','s2','s3','s4','s5','s6','s7'];
+const BAWAAN = {s1:0.12, s2:0.06, s3:0.14, s4:1400, s5:60, s6:0.65, s7:0.55, s8:0.10};
+const KUNCI_SLIDER = ['s1','s2','s3','s4','s5','s6','s7','s8'];
 const LAIN = ['varian'];
 const LABEL_V = {s1:'v1', s2:'v2', s3:'v3', s4:'v4', s5:'v5', s6:'v6', s7:'v7'};
 
@@ -1054,8 +1078,8 @@ function setSlider(id, nilai){
 }
 function opsiSekarang(){
   return {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value,
-          sOut:+$('s5').value, faktorTipis:+$('s6').value, minBarisBatal:+$('s7').value, autoAmbang:$('autoAmbang').checked,
-          nOpt: +$('varian').value};
+          sOut:+$('s5').value, faktorTipis:+$('s6').value, lebarBatal:+$('s7').value,
+          bedaGaris:+$('s8').value, autoAmbang:false, nOpt: +$('varian').value};
 }
 function catatKalibrasi(teks, gagal){
   const el = $('calLog');
