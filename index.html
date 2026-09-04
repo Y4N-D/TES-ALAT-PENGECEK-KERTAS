@@ -2,213 +2,339 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Purwarupa Mesin Pemindai Lembar Jawaban</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d141c">
+<title>Pemindai Lembar Jawaban</title>
 <style>
   :root{
-    --ink:#0d141c; --panel:#141f2b; --panel2:#1b2836; --line:#2a3a4c;
-    --text:#e6edf5; --dim:#8ba0b8; --ok:#3ecf9a; --ragu:#f0a92e;
-    --salah:#f2604f; --kosong:#5b6f86; --accent:#4da3ff;
-    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --ink:#0d141c; --panel:#16212e; --panel2:#1d2b3a; --line:#2c3e52;
+    --text:#e9f0f7; --dim:#8ba0b8; --biru:#4da3ff; --biru2:#2b7fd8;
+    --hijau:#3ecf9a; --jingga:#f0a92e; --merah:#f2604f; --ungu:#c88ce8;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--ink);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-       font-size:15px;line-height:1.55;padding:28px 20px 80px}
-  .wrap{max-width:1080px;margin:0 auto}
-  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:26px}
-  h1{font-size:26px;font-weight:650;letter-spacing:-.4px}
-  header p{color:var(--dim);font-size:14px;margin-top:5px}
-  .tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:1.4px;
-       color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:2px 8px;margin-bottom:10px}
-  section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:18px}
-  section h2{font-size:13px;letter-spacing:1.6px;text-transform:uppercase;color:var(--dim);
-             font-weight:600;margin-bottom:14px}
-  label{display:block;font-size:13px;color:var(--dim);margin-bottom:5px}
-  textarea,input[type=text],input[type=number]{width:100%;background:var(--ink);color:var(--text);
-    border:1px solid var(--line);border-radius:6px;padding:10px;font-family:var(--mono);font-size:13px}
-  textarea{min-height:70px;resize:vertical}
-  .row{display:flex;gap:14px;flex-wrap:wrap}
-  .row > div{flex:1;min-width:170px}
-  button{background:var(--accent);color:#04121f;border:0;border-radius:6px;padding:10px 18px;
-         font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
-  button.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-  input[type=file]{font-size:13px;color:var(--dim)}
-  .slider{margin-bottom:12px}
-  .slider .v{font-family:var(--mono);color:var(--accent);float:right}
-  input[type=range]{width:100%;accent-color:var(--accent)}
-  .stat{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
-  .chip{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:8px 12px;
-        font-size:13px;min-width:96px}
-  .chip b{display:block;font-family:var(--mono);font-size:19px;font-weight:600}
-  .c-ok b{color:var(--ok)} .c-ragu b{color:var(--ragu)} .c-salah b{color:var(--salah)}
-  .c-kosong b{color:var(--kosong)} .c-skor b{color:var(--accent)}
-  canvas{max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;display:block}
-  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
-  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
-  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;margin-top:10px}
-  th,td{padding:5px 7px;border-bottom:1px solid var(--line);text-align:left}
-  th{color:var(--dim);font-weight:500;font-size:11px;letter-spacing:.6px;text-transform:uppercase}
-  .s-ok{color:#3ecf9a} .s-ragu{color:#ffa726;font-weight:600} .s-kosong{color:var(--kosong)}
-  .s-salah{color:#ff6b5e;font-weight:600} .s-tipis{color:#d98cf5;font-weight:600}
-  .log{font-family:var(--mono);font-size:12px;color:var(--dim);white-space:pre-wrap;
-       background:var(--ink);border:1px solid var(--line);border-radius:6px;padding:12px;margin-top:12px}
-  .err{border-color:var(--salah);color:var(--salah)}
-  .hint{font-size:12.5px;color:var(--dim);margin-top:8px}
-  .filelist{font-family:var(--mono);font-size:12px;color:var(--dim);margin-top:10px}
-  .filelist div{padding:3px 0;border-bottom:1px solid var(--line);cursor:pointer}
-  .filelist div:hover{color:var(--text)}
-  .filelist div.aktif{color:var(--accent)}
-  .camwrap{position:relative;border-radius:10px;overflow:hidden;background:#000;margin-top:14px}
-  .camwrap video{width:100%;display:block;min-height:200px;object-fit:cover}
-  .camwrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;
-                  background:transparent;border:0;border-radius:0;pointer-events:none}
-  .panduan{position:absolute;left:0;right:0;bottom:0;padding:10px 14px;font-size:14px;font-weight:600;
-           text-align:center;background:rgba(6,12,20,.82);backdrop-filter:blur(3px)}
-  .p-siap{color:var(--ok)} .p-cari{color:var(--ragu)} .p-gagal{color:var(--salah)}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--ink);color:var(--text);font-size:16px;line-height:1.5;
+       font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
+
+  /* ---------- rangka aplikasi ---------- */
+  .bar{position:sticky;top:0;z-index:40;background:rgba(13,20,28,.96);backdrop-filter:blur(8px);
+       border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;
+       padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top))}
+  .bar h1{font-size:17px;font-weight:650;flex:1;letter-spacing:-.2px}
+  .bar .sub{font-size:12.5px;color:var(--dim);font-weight:400;display:block;margin-top:1px}
+  .ikon{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--panel);
+        color:var(--text);font-size:18px;display:flex;align-items:center;justify-content:center;
+        cursor:pointer;flex-shrink:0}
+  .layar{display:none;padding:18px 16px 110px;max-width:820px;margin:0 auto}
+  .layar.aktif{display:block}
+
+  /* ---------- komponen ---------- */
+  .kartu{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .kartu h2{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--dim);
+            font-weight:600;margin-bottom:12px}
+  label{display:block;font-size:13.5px;color:var(--dim);margin-bottom:6px}
+  input[type=text],input[type=number],textarea,select{
+    width:100%;background:var(--ink);color:var(--text);border:1px solid var(--line);
+    border-radius:10px;padding:12px;font-size:15.5px;font-family:inherit}
+  textarea{min-height:78px;resize:vertical;font-family:var(--mono);font-size:14px}
+  .baris{display:flex;gap:12px;flex-wrap:wrap}
+  .baris > div{flex:1;min-width:140px}
+  button{font-family:inherit;font-size:15px;font-weight:600;border:0;border-radius:11px;
+         padding:13px 18px;cursor:pointer;background:var(--biru);color:#05121f}
+  button.samar{background:transparent;color:var(--text);border:1px solid var(--line)}
+  button.bahaya{background:transparent;color:var(--merah);border:1px solid var(--merah)}
+  button.penuh{width:100%}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .tombol{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .petunjuk{font-size:13px;color:var(--dim);margin-top:8px;line-height:1.5}
+
+  .besar{display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+         background:var(--panel);border:1px solid var(--line);color:var(--text);
+         border-radius:14px;padding:16px;margin-bottom:10px;font-weight:500;font-size:15.5px}
+  .besar .em{width:44px;height:44px;border-radius:12px;background:var(--panel2);
+             display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+  .besar .ket{font-size:12.5px;color:var(--dim);font-weight:400;display:block;margin-top:2px}
+  .besar.utama{background:var(--biru);color:#05121f;border-color:var(--biru)}
+  .besar.utama .em{background:rgba(0,0,0,.16)}
+  .besar.utama .ket{color:rgba(5,18,31,.75)}
+
+  .kosongi{text-align:center;padding:44px 20px;color:var(--dim)}
+  .kosongi .em{font-size:40px;display:block;margin-bottom:12px;opacity:.65}
+
+  /* ---------- kamera ---------- */
+  .kamera{position:relative;border-radius:14px;overflow:hidden;background:#000;margin-bottom:12px}
+  .kamera video{width:100%;display:block;min-height:220px;object-fit:cover}
+  .kamera canvas{position:absolute;left:0;top:0;width:100%;height:100%;
+                 background:transparent;border:0;pointer-events:none}
+  .pandu{position:absolute;left:0;right:0;bottom:0;padding:12px 14px;font-size:14.5px;
+         font-weight:600;text-align:center;background:rgba(6,12,20,.85)}
+  .p-siap{color:var(--hijau)} .p-cari{color:var(--jingga)} .p-gagal{color:var(--merah)}
+
+  /* ---------- ringkasan hasil ---------- */
+  .angka{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:9px;margin-bottom:14px}
+  .angka div{background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+             padding:11px 12px;font-size:12.5px;color:var(--dim)}
+  .angka b{display:block;font-family:var(--mono);font-size:21px;font-weight:600;color:var(--text)}
+  .a-hijau b{color:var(--hijau)} .a-jingga b{color:var(--jingga)}
+  .a-merah b{color:var(--merah)} .a-biru b{color:var(--biru)} .a-ungu b{color:var(--ungu)}
+
+  canvas.hasil{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;display:block}
+
+  /* ---------- daftar koreksi ---------- */
+  .nomor{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .nomor .no{font-family:var(--mono);font-size:14px;width:30px;color:var(--dim);flex-shrink:0}
+  .nomor .pil{display:flex;gap:5px;flex:1}
+  .nomor .pil button{flex:1;padding:8px 0;font-family:var(--mono);font-size:14px;
+                     background:var(--ink);color:var(--dim);border:1px solid var(--line);border-radius:8px}
+  .nomor .pil button.on{background:var(--biru);color:#05121f;border-color:var(--biru)}
+  .nomor .pil button.kosong{font-size:12px}
+  .lencana{font-size:11px;padding:3px 7px;border-radius:20px;flex-shrink:0;font-weight:600}
+  .l-ragu{background:rgba(240,169,46,.18);color:var(--jingga)}
+  .l-tipis{background:rgba(200,140,232,.18);color:var(--ungu)}
+  .l-ganti{background:rgba(77,163,255,.18);color:var(--biru)}
+  .l-salah{background:rgba(242,96,79,.18);color:var(--merah)}
+
+  /* ---------- kisi kunci jawaban ---------- */
+  .kisi{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px}
+  .kisi .sel{display:flex;align-items:center;gap:5px}
+  .kisi .sel span{font-family:var(--mono);font-size:12.5px;color:var(--dim);width:22px}
+  .kisi .sel button{flex:1;padding:7px 0;font-family:var(--mono);font-size:12.5px;
+                    background:var(--ink);color:var(--dim);border:1px solid var(--line);border-radius:7px}
+  .kisi .sel button.on{background:var(--hijau);color:#04211a;border-color:var(--hijau)}
+
+  /* ---------- daftar hasil ---------- */
+  .item{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
+        border-radius:12px;padding:13px 14px;margin-bottom:9px}
+  .item .isi{flex:1;min-width:0}
+  .item .isi b{font-size:15px;font-weight:600;display:block;
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item .isi span{font-size:12.5px;color:var(--dim)}
+  .item .skor{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--biru)}
+
+  /* ---------- lain-lain ---------- */
+  .geser{margin-bottom:14px}
+  .geser .v{float:right;font-family:var(--mono);color:var(--biru)}
+  input[type=range]{width:100%;accent-color:var(--biru);height:26px}
+  .saklar{display:flex;align-items:center;gap:11px;font-size:15px;cursor:pointer;padding:6px 0}
+  .saklar input{width:20px;height:20px;accent-color:var(--biru);flex-shrink:0}
+  .catatan{font-family:var(--mono);font-size:12px;color:var(--dim);white-space:pre-wrap;
+           background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+  .catatan.err{border-color:var(--merah);color:var(--merah)}
+  .pesan{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;z-index:90;
+         background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+         padding:12px 18px;font-size:14.5px;box-shadow:0 6px 22px rgba(0,0,0,.45);
+         opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+  .pesan.tampil{opacity:1}
+  .melayang{position:fixed;left:0;right:0;bottom:0;z-index:35;padding:12px 16px;
+            padding-bottom:calc(12px + env(safe-area-inset-bottom));
+            background:linear-gradient(to top,var(--ink) 62%,transparent);display:none}
+  .melayang.tampil{display:block}
+  .melayang .isi{max-width:820px;margin:0 auto;display:flex;gap:10px}
+  .melayang button{flex:1}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header>
-  <div class="tag">TAHAP 1 — PURWARUPA MESIN INTI</div>
-  <h1>Pemindai Lembar Jawaban</h1>
-  <p>Menguji akurasi deteksi penanda sudut, koreksi perspektif, dan pembacaan tanda silang.
-     Seluruh pemrosesan berjalan di dalam peramban tanpa koneksi internet.</p>
-</header>
 
-<section>
-  <h2>1 · Kunci jawaban</h2>
-  <label>Ketik urutan jawaban (50 huruf, misal <span style="font-family:var(--mono)">ACBDE...</span>)
-    atau berpasangan (<span style="font-family:var(--mono)">1A 2C 3B ...</span>)</label>
-  <textarea id="kunci" placeholder="Kosongkan jika hanya ingin menguji pembacaan tanpa penilaian"></textarea>
-  <div class="row" style="margin-top:12px">
-    <div><label>Nilai per soal benar</label><input type="number" id="bobot" value="2" step="0.25"></div>
-    <div><label>Pengurangan per soal salah</label><input type="number" id="penalti" value="1" step="0.25" min="0"></div>
-    <div><label>Nilai per soal kosong</label><input type="number" id="kosongVal" value="0" step="0.25"></div>
-    <div><label>Status kunci</label><input type="text" id="kunciInfo" value="belum diisi" readonly></div>
-  </div>
-  <div class="hint">Pengurangan hanya dikenakan pada soal yang dijawab tetapi keliru. Soal yang tidak dijawab,
-    termasuk yang coretannya terlalu tipis untuk dibaca, dihitung terpisah dan bernilai nol.</div>
-</section>
-
-<section>
-  <h2>2 · Foto lembar jawaban</h2>
-  <input type="file" id="berkas" accept="image/*" multiple>
-  <div class="hint">Bisa memilih beberapa foto sekaligus. Pastikan keempat kotak hitam di sudut kertas ikut terfoto.</div>
-  <div class="row" style="margin-top:14px">
-    <div><label>Jenis lembar jawaban (sesuaikan dengan template yang dicetak)</label>
-      <select id="varian" style="width:100%;background:var(--ink);color:var(--text);border:1px solid var(--line);
-              border-radius:6px;padding:10px;font-size:14px;font-family:inherit">
-        <option value="5" selected>5 pilihan (A sampai E)</option>
-        <option value="4">4 pilihan (A sampai D)</option>
-      </select></div>
-  </div>
-  <label style="display:flex;align-items:center;gap:9px;margin-top:12px;color:var(--text);font-size:14px;cursor:pointer">
-    <input type="checkbox" id="autoAmbang" checked style="width:17px;height:17px;accent-color:var(--accent)">
-    Sesuaikan ambang otomatis pada setiap foto
-  </label>
-  <div class="hint">Setiap foto dianalisis sendiri-sendiri, sehingga perbedaan pencahayaan, ketebalan tinta,
-    atau hasil cetak antar lembar tidak perlu disetel manual. Bila sebaran suatu foto tidak layak dikalibrasi,
-    sistem otomatis kembali memakai nilai pada panel penyetelan manual.</div>
-  <div class="btns"><button id="proses" disabled>Proses foto</button>
-    <button class="ghost" id="bukaKamera">Buka kamera</button>
-    <button class="ghost" id="unduh" disabled>Unduh hasil (CSV)</button></div>
-
-  <div id="kameraBox" style="display:none">
-    <div class="camwrap">
-      <video id="vid" playsinline muted autoplay></video>
-      <canvas id="overlay"></canvas>
-      <div class="panduan p-cari" id="panduan">Menyiapkan kamera...</div>
-    </div>
-    <div class="btns">
-      <button id="jepret">Ambil foto</button>
-      <button class="ghost" id="autoJepret">Jepret otomatis: mati</button>
-      <button class="ghost" id="senter">Senter</button>
-      <button class="ghost" id="tutupKamera">Tutup kamera</button>
-    </div>
-    <div class="hint">Sejajarkan lembar jawaban dengan bingkai putih sampai keterangan di bawah gambar
-      berubah menjadi hijau. Sistem memeriksa keempat penanda sudut secara langsung sebelum foto diambil,
-      sehingga foto yang tidak terbaca dapat dicegah sejak awal.</div>
-  </div>
-  <div class="filelist" id="daftar"></div>
-</section>
-
-<section id="hasilBox" style="display:none">
-  <h2>3 · Hasil pembacaan</h2>
-  <div class="stat" id="stat"></div>
-  <div id="perluCek" style="font-size:13.5px;background:var(--panel2);border:1px solid var(--line);
-       border-radius:8px;padding:12px 14px;margin-bottom:14px"></div>
-  <div class="grid2">
-    <div>
-      <label>Citra hasil pelurusan beserta kotak terdeteksi</label>
-      <canvas id="kanvas"></canvas>
-    </div>
-    <div>
-      <label>Rincian per nomor</label>
-      <div style="max-height:520px;overflow:auto">
-        <table id="tabel"><thead><tr><th>No</th><th>Baca</th><th>Kunci</th><th>Status</th>
-          <th>Coretan</th><th>Dibatalkan</th><th>Relatif</th></tr></thead><tbody></tbody></table>
-      </div>
-    </div>
-  </div>
-  <div class="log" id="log"></div>
-</section>
-
-<section>
-  <h2>4 · Kalibrasi otomatis</h2>
-  <div class="hint" style="margin-bottom:12px">Siapkan dua lembar yang dicetak dan difoto dengan cara yang sama seperti
-    saat ujian nanti: satu lembar dibiarkan kosong, satu lembar lagi disilang pada sebagian besar nomor (tidak harus seluruhnya).
-    Sistem akan mengukur sendiri sebaran kegelapannya lalu menetapkan ambang di titik teraman.</div>
-  <div class="row">
-    <div><label>Foto lembar KOSONG</label><input type="file" id="calKosong" accept="image/*"></div>
-    <div><label>Foto lembar TERISI PENUH</label><input type="file" id="calIsi" accept="image/*"></div>
-  </div>
-  <div class="btns">
-    <button id="jalankanKalibrasi">Hitung kalibrasi otomatis</button>
-    <button class="ghost" id="simpanProfil">Simpan profil</button>
-    <button class="ghost" id="muatProfilBtn">Muat profil</button>
-    <button class="ghost" id="resetProfil">Kembali ke bawaan</button>
-    <input type="file" id="muatProfil" accept=".json" style="display:none">
-  </div>
-  <div class="log" id="calLog" style="display:none"></div>
-</section>
-
-<section>
-  <h2>5 · Penyetelan manual</h2>
-  <div class="grid2">
-    <div>
-      <div class="slider"><label>Ambang minimum coretan (relatif) <span class="v" id="v1">0.12</span></label>
-        <input type="range" id="s1" min="0.03" max="0.40" step="0.01" value="0.12"></div>
-      <div class="slider"><label>Selisih minimum terhadap kotak kedua <span class="v" id="v2">0.06</span></label>
-        <input type="range" id="s2" min="0.02" max="0.30" step="0.01" value="0.06"></div>
-      <div class="slider"><label>Zona peringatan coretan tipis <span class="v" id="v6">0.65</span></label>
-        <input type="range" id="s6" min="0.40" max="1.00" step="0.05" value="0.65"></div>
-      <div class="slider"><label>Lebar goresan mendatar penanda "=" <span class="v" id="v7">0.55</span></label>
-        <input type="range" id="s7" min="0.30" max="0.95" step="0.05" value="0.55"></div>
-      <div class="slider"><label>Selisih bukti minimum antar coretan <span class="v" id="v8">0.10</span></label>
-        <input type="range" id="s8" min="0.02" max="0.40" step="0.02" value="0.10"></div>
-    </div>
-    <div>
-      <div class="slider"><label>Jarak aman dari tepi kotak (cm) <span class="v" id="v3">0.14</span></label>
-        <input type="range" id="s3" min="0.05" max="0.25" step="0.01" value="0.14"></div>
-      <div class="slider"><label>Resolusi kerja foto (piksel) <span class="v" id="v4">1400</span></label>
-        <input type="range" id="s4" min="700" max="2400" step="100" value="1400"></div>
-      <div class="slider"><label>Ketajaman citra hasil (piksel per cm) <span class="v" id="v5">60</span></label>
-        <input type="range" id="s5" min="30" max="100" step="10" value="60"></div>
-    </div>
-  </div>
-  <div class="hint">Nilai bawaan sudah diuji pada simulasi delapan kondisi pemotretan dan pada lembar digital.
-    Ubah hanya jika hasil uji lapangan menunjukkan pola kesalahan tertentu, lalu proses ulang foto yang sama.
-    Ketajaman citra hasil hanya menentukan kehalusan tampilan dan pengukuran; menaikkannya melampaui
-    resolusi foto sumber tidak menambah detail baru, hanya memperbesar gambar.
-    Ambang minimum kini diukur relatif terhadap dua kotak terbersih pada nomor yang sama, sehingga
-    cetakan huruf, garis kotak, dan bayangan setempat sudah tidak lagi ikut terhitung.</div>
-</section>
+<div class="bar">
+  <button class="ikon" id="kembali" style="display:none">&#8592;</button>
+  <h1 id="judul">Pemindai Lembar Jawaban<span class="sub" id="subjudul">Belum ada sesi dipilih</span></h1>
+  <button class="ikon" id="keSetelan">&#9881;</button>
 </div>
 
+<!-- ================= BERANDA ================= -->
+<div class="layar aktif" id="layarBeranda">
+  <button class="besar utama" id="sesiBaru">
+    <span class="em">&#43;</span>
+    <span>Buat sesi ujian baru<span class="ket">Tentukan nama kegiatan, kunci jawaban, dan penilaian</span></span>
+  </button>
+  <div class="kartu">
+    <h2>Sesi tersimpan</h2>
+    <div id="daftarSesi"></div>
+  </div>
+</div>
+
+<!-- ================= BUAT / UBAH SESI ================= -->
+<div class="layar" id="layarSesi">
+  <div class="kartu">
+    <h2>Keterangan sesi</h2>
+    <label>Nama kegiatan atau mata pelajaran</label>
+    <input type="text" id="sNama" placeholder="Contoh: Olimpiade Matematika SD">
+    <div style="margin-top:12px">
+      <label>Jenis lembar jawaban</label>
+      <select id="sVarian">
+        <option value="5">5 pilihan (A sampai E)</option>
+        <option value="4">4 pilihan (A sampai D)</option>
+      </select>
+    </div>
+  </div>
+  <div class="kartu">
+    <h2>Penilaian</h2>
+    <div class="baris">
+      <div><label>Nilai jawaban benar</label><input type="number" id="sBenar" value="2" step="0.25"></div>
+      <div><label>Pengurangan jawaban salah</label><input type="number" id="sSalah" value="1" step="0.25" min="0"></div>
+      <div><label>Nilai tanpa jawaban</label><input type="number" id="sKosong" value="0" step="0.25"></div>
+    </div>
+    <div class="petunjuk">Pengurangan hanya dikenakan pada nomor yang dijawab tetapi keliru.
+      Nomor yang tidak dijawab dihitung terpisah.</div>
+  </div>
+  <div class="tombol">
+    <button class="penuh" id="simpanSesi">Simpan sesi</button>
+  </div>
+</div>
+
+<!-- ================= MENU SESI ================= -->
+<div class="layar" id="layarMenu">
+  <button class="besar utama" id="mulaiPindai">
+    <span class="em">&#128247;</span>
+    <span>Mulai memindai<span class="ket">Buka kamera dan foto lembar jawaban</span></span>
+  </button>
+  <button class="besar" id="keKunci">
+    <span class="em">&#128273;</span>
+    <span>Kunci jawaban<span class="ket" id="ketKunci">Belum diisi</span></span>
+  </button>
+  <button class="besar" id="keDaftar">
+    <span class="em">&#128203;</span>
+    <span>Hasil pemindaian<span class="ket" id="ketDaftar">0 lembar tersimpan</span></span>
+  </button>
+  <button class="besar" id="keEkspor">
+    <span class="em">&#8681;</span>
+    <span>Ekspor ke CSV<span class="ket">Untuk digabung dengan hasil dari perangkat lain</span></span>
+  </button>
+  <button class="besar" id="ubahSesi">
+    <span class="em">&#9998;</span>
+    <span>Ubah keterangan sesi<span class="ket" id="ketSesi"></span></span>
+  </button>
+  <div class="tombol"><button class="bahaya penuh" id="hapusSesi">Hapus sesi ini</button></div>
+</div>
+
+<!-- ================= KUNCI JAWABAN ================= -->
+<div class="layar" id="layarKunci">
+  <div class="kartu">
+    <h2>Isi cepat</h2>
+    <label>Tempel urutan jawaban, misal <span style="font-family:var(--mono)">ACBDE...</span>
+      atau <span style="font-family:var(--mono)">1A 2C 3B</span></label>
+    <textarea id="kunciTeks" placeholder="Boleh dikosongkan jika ingin mengisi lewat kisi di bawah"></textarea>
+    <div class="tombol">
+      <button id="terapkanTeks">Terapkan</button>
+      <button class="samar" id="kosongkanKunci">Kosongkan semua</button>
+    </div>
+  </div>
+  <div class="kartu">
+    <h2>Kisi jawaban <span id="jmlKunci" style="float:right;font-family:var(--mono);color:var(--biru)"></span></h2>
+    <div class="kisi" id="kisiKunci"></div>
+  </div>
+</div>
+
+<!-- ================= PINDAI ================= -->
+<div class="layar" id="layarPindai">
+  <div class="kamera">
+    <video id="vid" playsinline muted autoplay></video>
+    <canvas id="overlay"></canvas>
+    <div class="pandu p-cari" id="pandu">Menyiapkan kamera...</div>
+  </div>
+  <div class="tombol">
+    <button style="flex:2" id="jepret">Ambil foto</button>
+    <button class="samar" id="autoJepret">Otomatis: mati</button>
+    <button class="samar" id="senter">Senter</button>
+  </div>
+  <div class="petunjuk">Sejajarkan lembar dengan bingkai sampai keterangan berubah hijau.
+    Sistem memeriksa keempat kotak hitam di sudut kertas sebelum foto diambil, sehingga foto
+    yang tidak terbaca dapat dicegah sejak awal.</div>
+  <div class="kartu" style="margin-top:14px">
+    <h2>Atau ambil dari galeri</h2>
+    <input type="file" id="berkasFoto" accept="image/*" style="font-size:13.5px;color:var(--dim)">
+  </div>
+</div>
+
+<!-- ================= HASIL & KOREKSI ================= -->
+<div class="layar" id="layarHasil">
+  <div id="hasilGagal" style="display:none"></div>
+  <div id="hasilIsi">
+    <div class="angka" id="angkaHasil"></div>
+    <div class="kartu" id="kartuPeringatan" style="display:none">
+      <h2>Perlu diperiksa</h2>
+      <div id="isiPeringatan" style="font-size:14px"></div>
+    </div>
+    <div class="kartu">
+      <h2>Identitas peserta</h2>
+      <label>Nama peserta</label>
+      <input type="text" id="hNama" placeholder="Ketik sesuai tulisan pada lembar">
+      <div style="margin-top:12px">
+        <label>Nama sekolah</label>
+        <input type="text" id="hSekolah" placeholder="Ketik sesuai tulisan pada lembar">
+      </div>
+    </div>
+    <div class="kartu">
+      <h2>Citra hasil pelurusan</h2>
+      <canvas class="hasil" id="kanvasHasil"></canvas>
+    </div>
+    <div class="kartu">
+      <h2>Koreksi jawaban
+        <button class="samar" id="tampilSemua" style="float:right;padding:5px 11px;font-size:12.5px">
+          Tampilkan semua</button></h2>
+      <div id="daftarNomor"></div>
+    </div>
+    <div class="catatan" id="catatanTeknis"></div>
+  </div>
+</div>
+
+<!-- ================= DAFTAR HASIL ================= -->
+<div class="layar" id="layarDaftar">
+  <div id="isiDaftarHasil"></div>
+</div>
+
+<!-- ================= PENGATURAN ================= -->
+<div class="layar" id="layarSetelan">
+  <div class="kartu">
+    <h2>Pemindaian</h2>
+    <label class="saklar"><input type="checkbox" id="autoAmbang" checked>
+      Sesuaikan ambang otomatis tiap foto</label>
+    <label class="saklar"><input type="checkbox" id="simpanCitra">
+      Simpan citra lembar pada tiap hasil</label>
+    <div class="petunjuk">Menyimpan citra memudahkan pengecekan ulang, tetapi memakan ruang
+      penyimpanan cukup besar bila lembarnya ratusan.</div>
+  </div>
+  <div class="kartu">
+    <h2>Ambang batas</h2>
+    <div class="geser"><label>Ambang minimum coretan <span class="v" id="v1">0.12</span></label>
+      <input type="range" id="s1" min="0.03" max="0.40" step="0.01" value="0.12"></div>
+    <div class="geser"><label>Selisih minimum antar kotak <span class="v" id="v2">0.06</span></label>
+      <input type="range" id="s2" min="0.02" max="0.30" step="0.01" value="0.06"></div>
+    <div class="geser"><label>Jarak aman dari tepi kotak (cm) <span class="v" id="v3">0.14</span></label>
+      <input type="range" id="s3" min="0.05" max="0.25" step="0.01" value="0.14"></div>
+    <div class="geser"><label>Zona peringatan coretan tipis <span class="v" id="v6">0.65</span></label>
+      <input type="range" id="s6" min="0.40" max="1.00" step="0.05" value="0.65"></div>
+    <div class="geser"><label>Lebar goresan penanda "=" <span class="v" id="v7">0.55</span></label>
+      <input type="range" id="s7" min="0.30" max="0.95" step="0.05" value="0.55"></div>
+    <div class="geser"><label>Selisih bukti antar coretan <span class="v" id="v8">0.10</span></label>
+      <input type="range" id="s8" min="0.02" max="0.40" step="0.02" value="0.10"></div>
+  </div>
+  <div class="kartu">
+    <h2>Mutu gambar</h2>
+    <div class="geser"><label>Resolusi kerja foto (piksel) <span class="v" id="v4">1400</span></label>
+      <input type="range" id="s4" min="700" max="2400" step="100" value="1400"></div>
+    <div class="geser"><label>Ketajaman citra hasil (px/cm) <span class="v" id="v5">60</span></label>
+      <input type="range" id="s5" min="30" max="100" step="10" value="60"></div>
+  </div>
+  <div class="kartu">
+    <h2>Profil penyetelan</h2>
+    <div class="petunjuk" style="margin-top:0;margin-bottom:12px">Simpan penyetelan menjadi satu berkas
+      lalu bagikan ke perangkat operator lain, agar semua memindai dengan penyetelan yang sama.</div>
+    <div class="tombol" style="margin-top:0">
+      <button class="samar" id="simpanProfil">Simpan profil</button>
+      <button class="samar" id="muatProfilBtn">Muat profil</button>
+      <button class="samar" id="resetProfil">Kembali ke bawaan</button>
+      <input type="file" id="muatProfil" accept=".json" style="display:none">
+    </div>
+    <div class="catatan" id="catatanProfil" style="display:none"></div>
+  </div>
+</div>
+
+<div class="melayang" id="melayang"><div class="isi" id="isiMelayang"></div></div>
+<div class="pesan" id="pesan"></div>
+
 <script>
+
 /* =======================================================================
    PETA TEMPLATE  — seluruh koordinat dalam sentimeter pada kertas A4
    ======================================================================= */
@@ -718,485 +844,601 @@ function prosesFoto(gray, w, h, opt){
   return {flat, ow, oh, sOut, geo, baca, rasioSemua, ambangPakai, sumber, info, dicoba, skor:best.sc.toFixed(2), kandidat:best.kandidat};
 }
 
+
 /* =======================================================================
-   ANTARMUKA
+   PENYIMPANAN LOKAL (IndexedDB) — bekerja penuh tanpa koneksi internet
+   ======================================================================= */
+const DB_NAMA = 'pemindaiLJ', DB_VERSI = 1;
+let db = null;
+function bukaDB(){
+  return new Promise((res, rej) => {
+    const p = indexedDB.open(DB_NAMA, DB_VERSI);
+    p.onupgradeneeded = e => {
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains('sesi'))
+        d.createObjectStore('sesi', {keyPath:'id'});
+      if(!d.objectStoreNames.contains('hasil')){
+        const s = d.createObjectStore('hasil', {keyPath:'id'});
+        s.createIndex('sesiId', 'sesiId', {unique:false});
+      }
+      if(!d.objectStoreNames.contains('setelan'))
+        d.createObjectStore('setelan', {keyPath:'kunci'});
+    };
+    p.onsuccess = e => { db = e.target.result; res(db); };
+    p.onerror = () => rej(p.error);
+  });
+}
+function tx(toko, mode){ return db.transaction(toko, mode).objectStore(toko); }
+function simpan(toko, nilai){
+  return new Promise((res, rej) => { const r = tx(toko,'readwrite').put(nilai);
+    r.onsuccess = () => res(nilai); r.onerror = () => rej(r.error); });
+}
+function ambil(toko, kunci){
+  return new Promise((res, rej) => { const r = tx(toko,'readonly').get(kunci);
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+}
+function ambilSemua(toko){
+  return new Promise((res, rej) => { const r = tx(toko,'readonly').getAll();
+    r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); });
+}
+function hapus(toko, kunci){
+  return new Promise((res, rej) => { const r = tx(toko,'readwrite').delete(kunci);
+    r.onsuccess = () => res(); r.onerror = () => rej(r.error); });
+}
+function hasilSesi(sesiId){
+  return new Promise((res, rej) => {
+    const r = tx('hasil','readonly').index('sesiId').getAll(sesiId);
+    r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); });
+}
+const idBaru = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* =======================================================================
+   KERANGKA ANTARMUKA
    ======================================================================= */
 const $ = id => document.getElementById(id);
-let berkasList = [], hasilSemua = [], aktif = -1;
-
-function bacaKunci(){
-  const t = $('kunci').value.trim().toUpperCase();
-  if(!t){ $('kunciInfo').value = 'belum diisi'; return null; }
-  const k = {};
-  const hurufSah = ($('varian').value==='4') ? 'A-D' : 'A-E';
-  const pasang = [...t.matchAll(new RegExp('(\\d{1,2})\\s*[.:\\-]?\\s*(['+hurufSah+'])','g'))];
-  if(pasang.length >= 5){ for(const m of pasang) k[+m[1]] = m[2]; }
-  else { const hur = t.replace(new RegExp('[^'+hurufSah+']','g'),''); for(let i=0;i<hur.length && i<50;i++) k[i+1] = hur[i]; }
-  const jml = Object.keys(k).length;
-  $('kunciInfo').value = jml ? `${jml} nomor terbaca` : 'format tidak dikenali';
-  return jml ? k : null;
+let sesiAktif = null, hasilAktif = null, tumpukan = [];
+const JUDUL = {
+  layarBeranda:['Pemindai Lembar Jawaban', null],
+  layarSesi:['Keterangan sesi', 'Isi nama dan aturan penilaian'],
+  layarMenu:['Sesi', null],
+  layarKunci:['Kunci jawaban', null],
+  layarPindai:['Pindai lembar', 'Arahkan kamera ke lembar jawaban'],
+  layarHasil:['Hasil pembacaan', 'Periksa lalu simpan'],
+  layarDaftar:['Hasil pemindaian', null],
+  layarSetelan:['Pengaturan', 'Berlaku untuk seluruh sesi']
+};
+function keLayar(id, dorong = true){
+  const kini = document.querySelector('.layar.aktif');
+  if(kini && kini.id === 'layarPindai' && id !== 'layarPindai') tutupKamera();
+  if(dorong && kini && kini.id !== id) tumpukan.push(kini.id);
+  document.querySelectorAll('.layar').forEach(l => l.classList.remove('aktif'));
+  $(id).classList.add('aktif');
+  window.scrollTo(0,0);
+  const [j, s] = JUDUL[id];
+  $('judul').childNodes[0].nodeValue = (id === 'layarMenu' && sesiAktif) ? sesiAktif.nama : j;
+  const sub = (id === 'layarMenu' && sesiAktif)
+      ? `${sesiAktif.nOpt} pilihan · ${sesiAktif.jumlah || 0} lembar`
+      : (s || (sesiAktif && id !== 'layarBeranda' ? sesiAktif.nama : 'Belum ada sesi dipilih'));
+  $('subjudul').textContent = sub;
+  $('kembali').style.display = tumpukan.length ? 'flex' : 'none';
+  aturMelayang(id);
 }
-$('kunci').addEventListener('input', bacaKunci);
-[['s1','v1'],['s2','v2'],['s3','v3'],['s4','v4'],['s5','v5'],['s6','v6'],['s7','v7'],['s8','v8']]
-  .forEach(([sid,vid]) => $(sid).addEventListener('input', () => $(vid).textContent = $(sid).value));
+$('kembali').onclick = () => { const t = tumpukan.pop(); if(t) keLayar(t, false); };
+$('keSetelan').onclick = () => keLayar('layarSetelan');
 
-$('berkas').addEventListener('change', e => {
-  berkasList = [...e.target.files];
-  $('proses').disabled = berkasList.length === 0;
-  $('daftar').innerHTML = berkasList.map((f,i)=>`<div data-i="${i}">${f.name}</div>`).join('');
-});
-
-async function muatGray(file, maxDim){
-  const bmp = await createImageBitmap(file, {imageOrientation:'from-image'}).catch(()=>createImageBitmap(file));
-  const sc = Math.min(1, maxDim/Math.max(bmp.width, bmp.height));
-  const w = Math.round(bmp.width*sc), h = Math.round(bmp.height*sc);
-  const cv = document.createElement('canvas'); cv.width=w; cv.height=h;
-  const ctx = cv.getContext('2d', {willReadFrequently:true});
-  ctx.drawImage(bmp, 0, 0, w, h);
-  return {gray: toGray(ctx.getImageData(0,0,w,h).data, w, h), w, h};
+function aturMelayang(id){
+  const m = $('melayang'), isi = $('isiMelayang');
+  if(id === 'layarHasil' && hasilAktif && !hasilAktif.err){
+    isi.innerHTML = '<button class="samar" id="buangHasil">Buang</button>' +
+                    '<button id="simpanHasil" style="flex:2">Simpan &amp; pindai berikutnya</button>';
+    $('simpanHasil').onclick = simpanHasilAktif;
+    $('buangHasil').onclick = () => { hasilAktif = null; keLayar('layarPindai', false); bukaKamera(); };
+    m.classList.add('tampil');
+  } else if(id === 'layarKunci'){
+    isi.innerHTML = '<button id="simpanKunci" class="penuh">Simpan kunci jawaban</button>';
+    $('simpanKunci').onclick = simpanKunci;
+    m.classList.add('tampil');
+  } else m.classList.remove('tampil');
+}
+let jamPesan = null;
+function pesan(teks){
+  const p = $('pesan'); p.textContent = teks; p.classList.add('tampil');
+  clearTimeout(jamPesan); jamPesan = setTimeout(() => p.classList.remove('tampil'), 2600);
 }
 
-$('proses').addEventListener('click', async () => {
-  const kunci = bacaKunci();
-  const nilai = {benar: parseFloat($('bobot').value)||0,
-                 salah: parseFloat($('penalti').value)||0,
-                 kosong: parseFloat($('kosongVal').value)||0};
-  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, lebarBatal:+$('s7').value, bedaGaris:+$('s8').value, autoAmbang:$('autoAmbang').checked,
-          nOpt: +$('varian').value};
-  const maxDim = +$('s4').value;
-  $('proses').disabled = true; $('proses').textContent = 'Memproses...';
-  hasilSemua = [];
-  for(const f of berkasList){
-    const t0 = performance.now();
-    try{
-      const {gray, w, h} = await muatGray(f, maxDim);
-      const r = prosesFoto(gray, w, h, opt);
-      r.nama = f.name; r.ms = Math.round(performance.now()-t0); r.kunci = kunci; r.nilai = nilai;
-      hasilSemua.push(r);
-    }catch(ex){ hasilSemua.push({nama:f.name, err:'Gagal membaca berkas: '+ex.message}); }
-  }
-  $('proses').disabled = false; $('proses').textContent = 'Proses foto';
-  $('unduh').disabled = !hasilSemua.some(r=>!r.err);
-  $('daftar').innerHTML = hasilSemua.map((r,i)=>
-    `<div data-i="${i}">${r.err ? '✕' : '✓'} ${r.nama}</div>`).join('');
-  tampil(0);
-});
-$('daftar').addEventListener('click', e => {
-  const i = e.target.dataset.i;
-  if(i !== undefined && hasilSemua.length) tampil(+i);
-});
+/* =======================================================================
+   PENYETELAN
+   ======================================================================= */
+const GESER = ['s1','s2','s3','s4','s5','s6','s7','s8'];
+const LABEL = {s1:'v1',s2:'v2',s3:'v3',s4:'v4',s5:'v5',s6:'v6',s7:'v7',s8:'v8'};
+const BAWAAN = {s1:0.12,s2:0.06,s3:0.14,s4:1400,s5:60,s6:0.65,s7:0.55,s8:0.10,
+                autoAmbang:true, simpanCitra:false};
+GESER.forEach(k => $(k).addEventListener('input', () => {
+  $(LABEL[k]).textContent = $(k).value; simpanSetelan(); }));
+['autoAmbang','simpanCitra'].forEach(k => $(k).addEventListener('change', simpanSetelan));
 
-function tampil(i){
-  const r = hasilSemua[i]; if(!r) return;
-  aktif = i;
-  [...$('daftar').children].forEach((d,k)=>d.classList.toggle('aktif', k===i));
-  $('hasilBox').style.display = 'block';
-  const log = $('log'); log.classList.toggle('err', !!r.err);
-  if(r.err){
-    $('stat').innerHTML = ''; $('tabel').querySelector('tbody').innerHTML = '';
-    const cv = $('kanvas'); cv.width = 10; cv.height = 10;
-    log.textContent = `${r.nama}\n${r.err}`;
+function setelanKini(){
+  const o = {}; GESER.forEach(k => o[k] = +$(k).value);
+  o.autoAmbang = $('autoAmbang').checked; o.simpanCitra = $('simpanCitra').checked;
+  return o;
+}
+function terapkanSetelan(o){
+  GESER.forEach(k => { if(typeof o[k] === 'number'){ $(k).value = o[k]; $(LABEL[k]).textContent = $(k).value; } });
+  if(o.autoAmbang !== undefined) $('autoAmbang').checked = !!o.autoAmbang;
+  if(o.simpanCitra !== undefined) $('simpanCitra').checked = !!o.simpanCitra;
+}
+function simpanSetelan(){ simpan('setelan', {kunci:'utama', nilai:setelanKini()}); }
+function opsiBaca(){
+  const s = setelanKini();
+  return {ambang:s.s1, selisih:s.s2, inset:s.s3, sOut:s.s5, faktorTipis:s.s6,
+          lebarBatal:s.s7, bedaGaris:s.s8, autoAmbang:s.autoAmbang,
+          nOpt: sesiAktif ? sesiAktif.nOpt : 5};
+}
+$('simpanProfil').onclick = () => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(setelanKini(),null,2)], {type:'application/json'}));
+  const a = document.createElement('a'); a.href = url; a.download = 'profil-pemindai.json'; a.click();
+  URL.revokeObjectURL(url); pesan('Profil disimpan');
+};
+$('muatProfilBtn').onclick = () => $('muatProfil').click();
+$('muatProfil').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  try{ terapkanSetelan(JSON.parse(await f.text())); simpanSetelan(); pesan('Profil diterapkan'); }
+  catch(ex){ pesan('Berkas profil tidak terbaca'); }
+};
+$('resetProfil').onclick = () => { terapkanSetelan(BAWAAN); simpanSetelan(); pesan('Kembali ke penyetelan bawaan'); };
+
+/* =======================================================================
+   BERANDA & SESI
+   ======================================================================= */
+async function muatBeranda(){
+  const daftar = await ambilSemua('sesi');
+  daftar.sort((a,b) => b.dibuat - a.dibuat);
+  const wadah = $('daftarSesi');
+  if(!daftar.length){
+    wadah.innerHTML = '<div class="kosongi"><span class="em">&#128196;</span>' +
+      'Belum ada sesi. Buat sesi baru untuk mulai memindai.</div>';
     return;
   }
-  // gambar citra hasil pelurusan + kotak
-  const cv = $('kanvas'); cv.width = r.ow; cv.height = r.oh;
+  const jml = {};
+  for(const s of daftar) jml[s.id] = (await hasilSesi(s.id)).length;
+  wadah.innerHTML = daftar.map(s => `
+    <div class="item" data-id="${s.id}">
+      <div class="isi"><b>${lolos(s.nama)}</b>
+        <span>${s.nOpt} pilihan · ${jml[s.id]} lembar · kunci ${Object.keys(s.kunci||{}).length} nomor</span></div>
+      <div class="skor">&#8250;</div>
+    </div>`).join('');
+  wadah.querySelectorAll('.item').forEach(el => el.onclick = () => bukaSesi(el.dataset.id));
+}
+const lolos = t => String(t||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+$('sesiBaru').onclick = () => {
+  sesiAktif = null;
+  $('sNama').value = ''; $('sVarian').value = '5';
+  $('sBenar').value = 2; $('sSalah').value = 1; $('sKosong').value = 0;
+  keLayar('layarSesi');
+};
+$('ubahSesi').onclick = () => {
+  $('sNama').value = sesiAktif.nama; $('sVarian').value = sesiAktif.nOpt;
+  $('sBenar').value = sesiAktif.nilai.benar; $('sSalah').value = sesiAktif.nilai.salah;
+  $('sKosong').value = sesiAktif.nilai.kosong;
+  keLayar('layarSesi');
+};
+$('simpanSesi').onclick = async () => {
+  const nama = $('sNama').value.trim();
+  if(!nama){ pesan('Nama kegiatan belum diisi'); return; }
+  const data = {
+    id: sesiAktif ? sesiAktif.id : idBaru(),
+    nama, nOpt: +$('sVarian').value,
+    nilai: {benar:+$('sBenar').value||0, salah:+$('sSalah').value||0, kosong:+$('sKosong').value||0},
+    kunci: sesiAktif ? (sesiAktif.kunci||{}) : {},
+    dibuat: sesiAktif ? sesiAktif.dibuat : Date.now()
+  };
+  await simpan('sesi', data);
+  sesiAktif = data; tumpukan = ['layarBeranda'];
+  await bukaMenu(); pesan('Sesi tersimpan');
+};
+async function bukaSesi(id){ sesiAktif = await ambil('sesi', id); tumpukan = ['layarBeranda']; await bukaMenu(); }
+async function bukaMenu(){
+  const h = await hasilSesi(sesiAktif.id);
+  sesiAktif.jumlah = h.length;
+  const nk = Object.keys(sesiAktif.kunci || {}).length;
+  $('ketKunci').textContent = nk ? `${nk} nomor terisi` : 'Belum diisi, hasil hanya dibaca tanpa dinilai';
+  $('ketDaftar').textContent = `${h.length} lembar tersimpan`;
+  $('ketSesi').textContent = `${sesiAktif.nOpt} pilihan · benar +${sesiAktif.nilai.benar} · salah −${sesiAktif.nilai.salah}`;
+  keLayar('layarMenu', false);
+}
+$('hapusSesi').onclick = async () => {
+  if(!confirm(`Hapus sesi "${sesiAktif.nama}" beserta seluruh hasil pemindaiannya? Tindakan ini tidak dapat dibatalkan.`)) return;
+  for(const h of await hasilSesi(sesiAktif.id)) await hapus('hasil', h.id);
+  await hapus('sesi', sesiAktif.id);
+  sesiAktif = null; tumpukan = []; await muatBeranda(); keLayar('layarBeranda', false);
+  pesan('Sesi dihapus');
+};
+
+/* =======================================================================
+   KUNCI JAWABAN
+   ======================================================================= */
+let kunciSementara = {};
+$('keKunci').onclick = () => {
+  kunciSementara = Object.assign({}, sesiAktif.kunci || {});
+  $('kunciTeks').value = '';
+  gambarKisi(); keLayar('layarKunci');
+};
+function hurufSah(){ return OPT.slice(0, sesiAktif ? sesiAktif.nOpt : 5); }
+function gambarKisi(){
+  const H = hurufSah();
+  $('kisiKunci').innerHTML = Array.from({length:50}, (_,i) => {
+    const n = i+1;
+    return `<div class="sel"><span>${n}</span>` +
+      H.map(h => `<button data-n="${n}" data-h="${h}"
+        class="${kunciSementara[n]===h?'on':''}">${h}</button>`).join('') + '</div>';
+  }).join('');
+  $('kisiKunci').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const n = +b.dataset.n;
+    kunciSementara[n] = (kunciSementara[n] === b.dataset.h) ? undefined : b.dataset.h;
+    if(!kunciSementara[n]) delete kunciSementara[n];
+    gambarKisi();
+  });
+  $('jmlKunci').textContent = Object.keys(kunciSementara).length + '/50';
+}
+$('terapkanTeks').onclick = () => {
+  const t = $('kunciTeks').value.trim().toUpperCase();
+  const H = hurufSah().join(''), rentang = 'A-' + H[H.length-1];
+  const k = {};
+  const pasang = [...t.matchAll(new RegExp('(\\d{1,2})\\s*[.:\\-]?\\s*(['+rentang+'])','g'))];
+  if(pasang.length >= 5){ for(const m of pasang) k[+m[1]] = m[2]; }
+  else { const hur = t.replace(new RegExp('[^'+rentang+']','g'),'');
+         for(let i=0;i<hur.length && i<50;i++) k[i+1] = hur[i]; }
+  if(!Object.keys(k).length){ pesan('Format tidak dikenali'); return; }
+  kunciSementara = k; gambarKisi(); pesan(Object.keys(k).length + ' nomor terbaca');
+};
+$('kosongkanKunci').onclick = () => { kunciSementara = {}; gambarKisi(); };
+async function simpanKunci(){
+  sesiAktif.kunci = kunciSementara;
+  await simpan('sesi', {id:sesiAktif.id, nama:sesiAktif.nama, nOpt:sesiAktif.nOpt,
+                        nilai:sesiAktif.nilai, kunci:kunciSementara, dibuat:sesiAktif.dibuat});
+  await bukaMenu(); tumpukan = ['layarBeranda']; pesan('Kunci jawaban tersimpan');
+}
+
+/* =======================================================================
+   KAMERA
+   ======================================================================= */
+let arus = null, jamCek = null, siapBeruntun = 0, autoJepret = false, jedaJepret = 0;
+const vid = $('vid'), ov = $('overlay'), pandu = $('pandu');
+const kerja = document.createElement('canvas'), penuh = document.createElement('canvas');
+
+$('mulaiPindai').onclick = () => { keLayar('layarPindai'); bukaKamera(); };
+async function bukaKamera(){
+  if(arus) return;
+  try{
+    arus = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
+  }catch(ex){
+    pandu.className = 'pandu p-gagal';
+    pandu.textContent = 'Kamera tidak dapat dibuka: ' + ex.message;
+    return;
+  }
+  vid.srcObject = arus; await vid.play().catch(()=>{});
+  jamCek = setInterval(periksaBingkai, 380);
+}
+function tutupKamera(){
+  clearInterval(jamCek); jamCek = null;
+  if(arus){ arus.getTracks().forEach(t => t.stop()); arus = null; }
+}
+$('autoJepret').onclick = () => {
+  autoJepret = !autoJepret;
+  $('autoJepret').textContent = 'Otomatis: ' + (autoJepret ? 'aktif' : 'mati');
+};
+$('senter').onclick = async () => {
+  if(!arus) return;
+  const t = arus.getVideoTracks()[0];
+  const cap = t.getCapabilities ? t.getCapabilities() : {};
+  if(!cap.torch){ pesan('Senter tidak didukung perangkat ini'); return; }
+  await t.applyConstraints({advanced:[{torch: !t.getSettings().torch}]}).catch(()=>{});
+};
+function gambarBingkai(ctx, W, H, warna, quad, skala){
+  ctx.clearRect(0,0,W,H);
+  const rasio = TPL.pageW/TPL.pageH;
+  let bh = H*0.9, bw = bh*rasio;
+  if(bw > W*0.92){ bw = W*0.92; bh = bw/rasio; }
+  const x=(W-bw)/2, y=(H-bh)/2, s=Math.min(bw,bh)*0.11;
+  ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1.5;
+  ctx.setLineDash([7,7]); ctx.strokeRect(x,y,bw,bh); ctx.setLineDash([]);
+  ctx.strokeStyle=warna; ctx.lineWidth=4; ctx.lineCap='round';
+  [[x,y,1,1],[x+bw,y,-1,1],[x,y+bh,1,-1],[x+bw,y+bh,-1,-1]].forEach(([cx,cy,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(cx+dx*s,cy); ctx.lineTo(cx,cy); ctx.lineTo(cx,cy+dy*s); ctx.stroke(); });
+  if(quad){
+    ctx.strokeStyle=warna; ctx.lineWidth=2; ctx.beginPath();
+    [0,1,3,2].forEach((i,k)=>{ const px=quad[i][0]*skala, py=quad[i][1]*skala;
+      k===0?ctx.moveTo(px,py):ctx.lineTo(px,py); });
+    ctx.closePath(); ctx.stroke();
+  }
+}
+function periksaBingkai(){
+  if(!arus || !vid.videoWidth) return;
+  const W=vid.clientWidth, H=vid.clientHeight;
+  if(ov.width!==W || ov.height!==H){ ov.width=W; ov.height=H; }
+  const ctx = ov.getContext('2d');
+  const dw = 480, dh = Math.round(dw*vid.videoHeight/vid.videoWidth);
+  kerja.width=dw; kerja.height=dh;
+  const kc = kerja.getContext('2d',{willReadFrequently:true});
+  kc.drawImage(vid,0,0,dw,dh);
+  const g = toGray(kc.getImageData(0,0,dw,dh).data, dw, dh);
+  const r = cariSusunan(g, dw, dh), skala = W/dw;
+  if(r.err){
+    siapBeruntun=0; pandu.className='pandu p-gagal';
+    pandu.textContent='Penanda sudut belum terbaca, sejajarkan lembar dengan bingkai';
+    gambarBingkai(ctx,W,H,'#f2604f',null,skala); return;
+  }
+  if(r.luas < 0.34){
+    siapBeruntun=0; pandu.className='pandu p-cari';
+    pandu.textContent='Terlalu jauh, dekatkan kamera ke lembar';
+    gambarBingkai(ctx,W,H,'#f0a92e',r.pts,skala); return;
+  }
+  if(r.luas > 0.93){
+    siapBeruntun=0; pandu.className='pandu p-cari';
+    pandu.textContent='Terlalu dekat, mundurkan kamera';
+    gambarBingkai(ctx,W,H,'#f0a92e',r.pts,skala); return;
+  }
+  siapBeruntun++;
+  pandu.className='pandu p-siap';
+  pandu.textContent='Siap difoto' + (autoJepret ? ' — menunggu gambar stabil' : '');
+  gambarBingkai(ctx,W,H,'#3ecf9a',r.pts,skala);
+  if(autoJepret && siapBeruntun>=3 && Date.now()>jedaJepret) ambilFoto();
+}
+async function ambilFoto(){
+  if(!arus || !vid.videoWidth) return;
+  jedaJepret = Date.now()+1800; siapBeruntun=0;
+  penuh.width=vid.videoWidth; penuh.height=vid.videoHeight;
+  penuh.getContext('2d').drawImage(vid,0,0);
+  prosesKanvas(penuh);
+}
+$('jepret').onclick = ambilFoto;
+$('berkasFoto').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  const bmp = await createImageBitmap(f, {imageOrientation:'from-image'}).catch(()=>createImageBitmap(f));
+  const c = document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height;
+  c.getContext('2d').drawImage(bmp,0,0);
+  prosesKanvas(c); e.target.value='';
+};
+function prosesKanvas(sumber){
+  const set = setelanKini(), maxDim = set.s4;
+  const sc = Math.min(1, maxDim/Math.max(sumber.width, sumber.height));
+  const w = Math.round(sumber.width*sc), h = Math.round(sumber.height*sc);
+  const kecil = document.createElement('canvas'); kecil.width=w; kecil.height=h;
+  const kc = kecil.getContext('2d',{willReadFrequently:true});
+  kc.drawImage(sumber,0,0,w,h);
+  const gray = toGray(kc.getImageData(0,0,w,h).data, w, h);
+  const t0 = performance.now();
+  const r = prosesFoto(gray, w, h, opsiBaca());
+  r.ms = Math.round(performance.now()-t0);
+  hasilAktif = r;
+  tampilkanHasil();
+  keLayar('layarHasil');
+}
+
+/* =======================================================================
+   LAYAR HASIL & KOREKSI
+   ======================================================================= */
+let tampilSemuaNomor = false;
+$('tampilSemua').onclick = () => {
+  tampilSemuaNomor = !tampilSemuaNomor;
+  $('tampilSemua').textContent = tampilSemuaNomor ? 'Hanya yang bertanda' : 'Tampilkan semua';
+  gambarDaftarNomor();
+};
+function tampilkanHasil(){
+  const r = hasilAktif;
+  if(r.err){
+    $('hasilIsi').style.display='none';
+    $('hasilGagal').style.display='block';
+    $('hasilGagal').innerHTML = `<div class="kartu" style="border-color:var(--merah)">
+      <h2 style="color:var(--merah)">Foto tidak dapat dibaca</h2>
+      <div style="font-size:14.5px">${lolos(r.err)}</div>
+      <div class="tombol"><button class="penuh" id="ulangFoto">Ambil foto ulang</button></div></div>`;
+    $('ulangFoto').onclick = () => { hasilAktif=null; keLayar('layarPindai',false); bukaKamera(); };
+    return;
+  }
+  $('hasilIsi').style.display='block'; $('hasilGagal').style.display='none';
+  $('hNama').value=''; $('hSekolah').value='';
+  tampilSemuaNomor = false; $('tampilSemua').textContent='Tampilkan semua';
+  gambarCitra(); hitungRingkasan(); gambarDaftarNomor();
+  $('catatanTeknis').textContent =
+`Jenis lembar   : ${r.geo.nOpt} pilihan
+Kisi kotak     : ${r.geo.diselaraskan ? 'diselaraskan ke lembar (tinggi baris '+r.geo.rowH.toFixed(3)+' cm)' : 'memakai peta bawaan'}
+Ambang dipakai : ${r.ambangPakai.toFixed(3)} (${r.sumber})
+Waktu proses   : ${r.ms} ms`;
+}
+function gambarCitra(){
+  const r = hasilAktif, cv = $('kanvasHasil');
+  cv.width = r.ow; cv.height = r.oh;
   const ctx = cv.getContext('2d');
   const img = ctx.createImageData(r.ow, r.oh);
   for(let p=0;p<r.flat.length;p++){ const v=r.flat[p], q=p*4;
     img.data[q]=v; img.data[q+1]=v; img.data[q+2]=v; img.data[q+3]=255; }
-  ctx.putImageData(img, 0, 0);
-
-  const S = r.sOut || 40;
-  const tebal = Math.max(3, S/14);                    // ketebalan garis mengikuti ketajaman citra
+  ctx.putImageData(img,0,0);
+  const S = r.sOut, tebal = Math.max(3, S/14);
   const WARNA = {ok:'#00b869', ragu:'#ff8f00', tipis:'#b83ce0', batal:'#1470ff', salah:'#e8342a'};
-  const ISI   = {ok:'rgba(0,184,105,.20)', ragu:'rgba(255,143,0,.30)',
-                 tipis:'rgba(184,60,224,.28)', batal:'rgba(20,112,255,.22)',
-                 salah:'rgba(232,52,42,.30)'};
-  ctx.lineJoin = 'round';
-
-  /* Penanda tepi kiri: pita warna di samping nomor soal supaya mudah ditemukan sekilas */
-  function pitaNomor(n, warna){
-    const b = Math.floor((n-1)/TPL.rows), rr = (n-1)%TPL.rows;
-    const x = r.geo.blok[b].x0 - 0.92, y = r.geo.gridTop + rr*r.geo.rowH;
-    ctx.fillStyle = warna;
-    ctx.fillRect((x-0.12)*S, y*S, 0.10*S, r.geo.rowH*S);
-  }
-  function kotakTandai(n, i, warna, isi, putus){
-    const [x0,y0,x1,y1] = boxCm(n, i, r.geo);
-    ctx.setLineDash(putus ? [S/8, S/10] : []);
-    ctx.fillStyle = isi;
-    ctx.fillRect(x0*S, y0*S, (x1-x0)*S, (y1-y0)*S);
-    ctx.strokeStyle = warna; ctx.lineWidth = tebal;
-    ctx.strokeRect(x0*S, y0*S, (x1-x0)*S, (y1-y0)*S);
+  const ISI = {ok:'rgba(0,184,105,.20)', ragu:'rgba(255,143,0,.30)', tipis:'rgba(184,60,224,.28)',
+               batal:'rgba(20,112,255,.22)', salah:'rgba(232,52,42,.30)'};
+  ctx.lineJoin='round';
+  const kunci = sesiAktif ? (sesiAktif.kunci||{}) : {};
+  for(const b of r.baca){
+    for(const hur of (b.batal||[])){
+      const i = OPT.indexOf(hur), [x0,y0,x1,y1] = boxCm(b.n, i, r.geo);
+      ctx.fillStyle=ISI.batal; ctx.fillRect(x0*S,y0*S,(x1-x0)*S,(y1-y0)*S);
+      ctx.strokeStyle=WARNA.batal; ctx.lineWidth=tebal;
+      ctx.strokeRect(x0*S,y0*S,(x1-x0)*S,(y1-y0)*S);
+      ctx.beginPath(); ctx.moveTo(x0*S,y0*S); ctx.lineTo(x1*S,y1*S); ctx.stroke();
+    }
+    if(b.status==='kosong') continue;
+    const keliru = !!(kunci[b.n] && b.jwb && b.jwb !== kunci[b.n]);
+    const jenis = keliru ? 'salah' : b.status;
+    const [x0,y0,x1,y1] = boxCm(b.n, b.pilih, r.geo);
+    ctx.setLineDash(b.status==='tipis' ? [S/8,S/10] : []);
+    ctx.fillStyle=ISI[jenis]; ctx.fillRect(x0*S,y0*S,(x1-x0)*S,(y1-y0)*S);
+    ctx.strokeStyle=WARNA[jenis]; ctx.lineWidth=tebal;
+    ctx.strokeRect(x0*S,y0*S,(x1-x0)*S,(y1-y0)*S);
     ctx.setLineDash([]);
-  }
-
-  const perluCek = {ragu:[], tipis:[], salah:[], revisi:[]};
-  for(const b of r.baca){
-    // kotak yang dibatalkan peserta
-    if(b.batal && b.batal.length){
-      for(const hur of b.batal){
-        const i = OPT.indexOf(hur);
-        kotakTandai(b.n, i, WARNA.batal, ISI.batal, false);
-        const [bx0,by0,bx1,by1] = boxCm(b.n, i, r.geo);
-        ctx.strokeStyle = WARNA.batal; ctx.lineWidth = tebal*0.8;
-        ctx.beginPath(); ctx.moveTo(bx0*S, by0*S); ctx.lineTo(bx1*S, by1*S); ctx.stroke();
-      }
-      perluCek.revisi.push(b.n);
-      pitaNomor(b.n, WARNA.batal);
+    if(jenis!=='ok'){
+      const bl = Math.floor((b.n-1)/TPL.rows), rr = (b.n-1)%TPL.rows;
+      ctx.fillStyle = WARNA[jenis];
+      ctx.fillRect((r.geo.blok[bl].x0-1.04)*S, (r.geo.gridTop+rr*r.geo.rowH)*S, 0.10*S, r.geo.rowH*S);
     }
-    if(b.status === 'kosong') continue;
-    const keliru = !!(r.kunci && r.kunci[b.n] && b.jwb && b.jwb !== r.kunci[b.n]);
-    const jenis = keliru ? 'salah' : b.status;               // warna kotak
-    kotakTandai(b.n, b.pilih, WARNA[jenis], ISI[jenis], b.status === 'tipis');
-    // status pembacaan dan kebenaran jawaban dicatat terpisah agar jumlahnya
-    // selalu cocok dengan kartu ringkasan di atas
-    if(b.status === 'ragu')  perluCek.ragu.push(b.n);
-    if(b.status === 'tipis') perluCek.tipis.push(b.n);
-    if(keliru)               perluCek.salah.push(b.n);
-    if(jenis !== 'ok') pitaNomor(b.n, WARNA[jenis]);
   }
-  r.perluCek = perluCek;
-
-  // ringkasan
-  let ok=0, ragu=0, kosong=0, tipis=0, benar=0, salah=0, tanpaJawab=0, revisi=0;
+}
+function nilaiHasil(){
+  const r = hasilAktif, kunci = sesiAktif ? (sesiAktif.kunci||{}) : {};
+  const n = sesiAktif ? sesiAktif.nilai : {benar:0,salah:0,kosong:0};
+  let benar=0, salah=0, kosong=0, ragu=0, tipis=0, ganti=0, terbaca=0;
+  const salahNo=[], raguNo=[], tipisNo=[], gantiNo=[];
   for(const b of r.baca){
-    if(b.status==='ok') ok++; else if(b.status==='ragu') ragu++;
-    else if(b.status==='tipis') tipis++; else kosong++;
-    if(b.revisi) revisi++;
-    if(!r.kunci || !r.kunci[b.n]) continue;
-    if(b.jwb === null) tanpaJawab++;
-    else if(b.jwb === r.kunci[b.n]) benar++;
-    else salah++;
+    if(b.status==='ok') terbaca++;
+    else if(b.status==='ragu'){ ragu++; raguNo.push(b.n); }
+    else if(b.status==='tipis'){ tipis++; tipisNo.push(b.n); }
+    if(b.revisi){ ganti++; gantiNo.push(b.n); }
+    if(!kunci[b.n]) continue;
+    if(!b.jwb) kosong++;
+    else if(b.jwb===kunci[b.n]) benar++;
+    else { salah++; salahNo.push(b.n); }
   }
-  const nilaiBenar  = benar*r.nilai.benar;
-  const nilaiSalah  = salah*r.nilai.salah;
-  const nilaiKosong = tanpaJawab*r.nilai.kosong;
-  const skor = r.kunci ? +(nilaiBenar - nilaiSalah + nilaiKosong).toFixed(2) : null;
-  $('stat').innerHTML =
-    `<div class="chip c-ok"><b>${ok}</b>terbaca jelas</div>
-     <div class="chip c-ragu"><b>${ragu}</b>perlu dicek</div>
-     <div class="chip" style="border-color:#c88ce8"><b style="color:#c88ce8">${tipis}</b>coretan tipis</div>
-     <div class="chip" style="border-color:#4da3ff"><b style="color:#4da3ff">${revisi}</b>jawaban diganti</div>
-     <div class="chip c-kosong"><b>${kosong}</b>kosong</div>` +
-    (r.kunci ? `<div class="chip c-ok"><b>${benar}</b>benar (+${nilaiBenar})</div>
-     <div class="chip c-salah"><b>${salah}</b>salah (&minus;${nilaiSalah})</div>
-     <div class="chip c-kosong"><b>${tanpaJawab}</b>tanpa jawaban</div>
-     <div class="chip c-skor"><b>${skor}</b>skor akhir</div>` : '');
-  // daftar nomor yang perlu diperhatikan, agar tidak perlu dicari satu per satu pada gambar
-  const pc = r.perluCek;
-  const daftar = [];
-  if(pc.salah.length)  daftar.push(`<span style="color:#e8342a">Salah:</span> ${pc.salah.join(', ')}`);
-  if(pc.ragu.length)   daftar.push(`<span style="color:#ff8f00">Perlu dicek:</span> ${pc.ragu.join(', ')}`);
-  if(pc.tipis.length)  daftar.push(`<span style="color:#b83ce0">Coretan tipis:</span> ${pc.tipis.join(', ')}`);
-  if(pc.revisi.length) daftar.push(`<span style="color:#1470ff">Jawaban diganti:</span> ${pc.revisi.join(', ')}`);
-  if(daftar.length) daftar.push('<span style="color:var(--dim);font-size:12.5px">Satu nomor dapat muncul di lebih dari satu daftar, misalnya nomor yang perlu dicek sekaligus tidak cocok dengan kunci.</span>');
-  $('perluCek').innerHTML = daftar.length
-    ? daftar.map(d=>`<div style="padding:3px 0">${d}</div>`).join('')
-    : '<div style="color:var(--dim)">Seluruh nomor terbaca jelas, tidak ada yang perlu diperiksa manual.</div>';
-
-  // tabel
-  $('tabel').querySelector('tbody').innerHTML = r.baca.map(b=>{
-    const k = r.kunci ? (r.kunci[b.n]||'–') : '–';
-    let cls = 's-'+b.status, ket = b.status;
-    if(r.kunci && r.kunci[b.n] && b.jwb && b.jwb!==r.kunci[b.n]){ cls='s-salah'; ket='salah'; }
-    const bt = (b.batal && b.batal.length) ? b.batal.join(',') : '–';
-    const bg = ket==='salah' ? 'background:rgba(232,52,42,.12)'
-             : ket==='ragu'  ? 'background:rgba(255,143,0,.12)'
-             : ket==='tipis' ? 'background:rgba(184,60,224,.12)' : '';
-    return `<tr style="${bg}"><td>${b.n}</td><td>${b.jwb||'–'}</td><td>${k}</td>
-      <td class="${cls}">${ket}</td><td>${b.ganda||0}</td><td style="color:#4da3ff">${bt}</td><td>${b.top}</td></tr>`;
+  const skor = +(benar*n.benar - salah*n.salah + kosong*n.kosong).toFixed(2);
+  return {benar,salah,kosong,ragu,tipis,ganti,terbaca,skor,salahNo,raguNo,tipisNo,gantiNo,
+          adaKunci: Object.keys(kunci).length>0};
+}
+function hitungRingkasan(){
+  const v = nilaiHasil();
+  const kosongTotal = hasilAktif.baca.filter(b=>b.status==='kosong').length;
+  let html = `<div class="a-hijau"><b>${v.terbaca}</b>terbaca jelas</div>
+    <div class="a-jingga"><b>${v.ragu}</b>perlu dicek</div>
+    <div class="a-ungu"><b>${v.tipis}</b>coretan tipis</div>
+    <div class="a-biru"><b>${v.ganti}</b>jawaban diganti</div>
+    <div><b>${kosongTotal}</b>kosong</div>`;
+  if(v.adaKunci) html += `<div class="a-hijau"><b>${v.benar}</b>benar</div>
+    <div class="a-merah"><b>${v.salah}</b>salah</div>
+    <div class="a-biru"><b>${v.skor}</b>skor akhir</div>`;
+  $('angkaHasil').innerHTML = html;
+  const baris = [];
+  const t = (w,l,a) => a.length ? `<div style="padding:3px 0"><span style="color:${w}">${l}:</span> ${a.join(', ')}</div>` : '';
+  baris.push(t('#e8342a','Salah',v.salahNo));
+  baris.push(t('#ff8f00','Perlu dicek',v.raguNo));
+  baris.push(t('#b83ce0','Coretan tipis',v.tipisNo));
+  baris.push(t('#1470ff','Jawaban diganti',v.gantiNo));
+  const isi = baris.filter(Boolean).join('');
+  $('kartuPeringatan').style.display = isi ? 'block' : 'none';
+  $('isiPeringatan').innerHTML = isi;
+}
+function gambarDaftarNomor(){
+  const r = hasilAktif, H = OPT.slice(0, r.geo.nOpt);
+  const kunci = sesiAktif ? (sesiAktif.kunci||{}) : {};
+  const perlu = b => b.status!=='ok' || b.revisi ||
+                     (kunci[b.n] && b.jwb && b.jwb!==kunci[b.n]);
+  const daftar = tampilSemuaNomor ? r.baca : r.baca.filter(perlu);
+  if(!daftar.length){
+    $('daftarNomor').innerHTML = '<div class="kosongi" style="padding:22px">' +
+      'Seluruh nomor terbaca jelas, tidak ada yang perlu dikoreksi.</div>';
+    return;
+  }
+  $('daftarNomor').innerHTML = daftar.map(b => {
+    const lb = [];
+    if(b.status==='ragu') lb.push('<span class="lencana l-ragu">perlu dicek</span>');
+    if(b.status==='tipis') lb.push('<span class="lencana l-tipis">tipis</span>');
+    if(b.revisi) lb.push('<span class="lencana l-ganti">diganti</span>');
+    if(kunci[b.n] && b.jwb && b.jwb!==kunci[b.n]) lb.push('<span class="lencana l-salah">salah</span>');
+    return `<div class="nomor"><span class="no">${b.n}</span><div class="pil">` +
+      H.map(h => `<button data-n="${b.n}" data-h="${h}" class="${b.jwb===h?'on':''}">${h}</button>`).join('') +
+      `<button data-n="${b.n}" data-h="" class="kosong ${!b.jwb?'on':''}">&#8212;</button>` +
+      `</div>${lb.join('')}</div>`;
   }).join('');
-  log.textContent =
-`Berkas          : ${r.nama}
-Waktu proses    : ${r.ms} ms
-Kandidat penanda: ${r.kandidat}   susunan diuji: ${r.dicoba}   nilai kecocokan: ${r.skor}
-Ambang dipakai  : ${r.ambangPakai.toFixed(3)}  (${r.sumber})${r.info ? '  [celah '+r.info.celah+', '+r.info.jumlahAtas+' kotak bercoretan]' : ''}
-Jenis lembar    : ${r.geo.nOpt} pilihan
-Kisi kotak      : ${r.geo.diselaraskan ? 'diselaraskan ke lembar (tinggi baris '+r.geo.rowH.toFixed(3)+' cm, mulai '+r.geo.gridTop.toFixed(2)+' cm)' : 'memakai peta bawaan'}
-Penyetelan lain : selisih ${$('s2').value} · jarak tepi ${$('s3').value} cm · zona tipis ${$('s6').value}`;
-}
-
-
-/* =======================================================================
-   KAMERA LANGSUNG DENGAN BINGKAI PANDUAN
-   ======================================================================= */
-let stream = null, cekTimer = null, siapBeruntun = 0, autoJepret = false, jedaJepret = 0;
-const vid = $('vid'), ov = $('overlay'), pandu = $('panduan');
-const kerja = document.createElement('canvas');          // kanvas pemeriksaan cepat
-const penuh = document.createElement('canvas');          // kanvas pengambilan resolusi penuh
-
-$('bukaKamera').addEventListener('click', async () => {
-  if(stream) return;
-  try{
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: {facingMode:{ideal:'environment'}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
-  }catch(ex){
-    pandu.className = 'panduan p-gagal';
-    $('kameraBox').style.display = 'block';
-    pandu.textContent = 'Kamera tidak dapat dibuka: ' + ex.message;
-    return;
-  }
-  vid.srcObject = stream;
-  await vid.play().catch(()=>{});
-  $('kameraBox').style.display = 'block';
-  cekTimer = setInterval(periksaBingkai, 380);
-});
-
-$('tutupKamera').addEventListener('click', tutupKamera);
-function tutupKamera(){
-  clearInterval(cekTimer); cekTimer = null;
-  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream = null; }
-  $('kameraBox').style.display = 'none';
-}
-
-$('autoJepret').addEventListener('click', () => {
-  autoJepret = !autoJepret;
-  $('autoJepret').textContent = 'Jepret otomatis: ' + (autoJepret ? 'aktif' : 'mati');
-});
-
-$('senter').addEventListener('click', async () => {
-  if(!stream) return;
-  const track = stream.getVideoTracks()[0];
-  const cap = track.getCapabilities ? track.getCapabilities() : {};
-  if(!cap.torch){ pandu.textContent = 'Senter tidak didukung perangkat ini'; return; }
-  const nyala = !(track.getSettings().torch);
-  await track.applyConstraints({advanced:[{torch:nyala}]}).catch(()=>{});
-});
-
-/* Menggambar bingkai panduan berukuran A4 di atas tampilan kamera */
-function gambarBingkai(ctx, W, H, warna, quad, skala){
-  ctx.clearRect(0,0,W,H);
-  const rasio = TPL.pageW/TPL.pageH;
-  let bh = H*0.88, bw = bh*rasio;
-  if(bw > W*0.9){ bw = W*0.9; bh = bw/rasio; }
-  const x = (W-bw)/2, y = (H-bh)/2, s = Math.min(bw,bh)*0.10;
-  ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
-  ctx.setLineDash([7,7]); ctx.strokeRect(x,y,bw,bh); ctx.setLineDash([]);
-  ctx.strokeStyle = warna; ctx.lineWidth = 4; ctx.lineCap = 'round';
-  [[x,y,1,1],[x+bw,y,-1,1],[x,y+bh,1,-1],[x+bw,y+bh,-1,-1]].forEach(([cx,cy,dx,dy])=>{
-    ctx.beginPath(); ctx.moveTo(cx+dx*s,cy); ctx.lineTo(cx,cy); ctx.lineTo(cx,cy+dy*s); ctx.stroke();
+  $('daftarNomor').querySelectorAll('button').forEach(bt => bt.onclick = () => {
+    const n = +bt.dataset.n, b = r.baca[n-1];
+    b.jwb = bt.dataset.h || null;
+    b.status = 'ok'; b.dikoreksi = true;
+    if(b.jwb) b.pilih = OPT.indexOf(b.jwb);
+    gambarCitra(); hitungRingkasan(); gambarDaftarNomor();
   });
-  if(quad){
-    ctx.strokeStyle = warna; ctx.lineWidth = 2; ctx.beginPath();
-    const urut = [0,1,3,2];
-    urut.forEach((i,k)=>{ const px = quad[i][0]*skala, py = quad[i][1]*skala;
-      k===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py); });
-    ctx.closePath(); ctx.stroke();
-    urut.forEach(i=>{ ctx.beginPath();
-      ctx.arc(quad[i][0]*skala, quad[i][1]*skala, 5, 0, 6.29); ctx.fillStyle = warna; ctx.fill(); });
-  }
 }
-
-function periksaBingkai(){
-  if(!stream || !vid.videoWidth) return;
-  const W = vid.clientWidth, H = vid.clientHeight;
-  if(ov.width !== W || ov.height !== H){ ov.width = W; ov.height = H; }
-  const ctx = ov.getContext('2d');
-
-  const dw = 480, dh = Math.round(dw * vid.videoHeight / vid.videoWidth);
-  kerja.width = dw; kerja.height = dh;
-  const kc = kerja.getContext('2d', {willReadFrequently:true});
-  kc.drawImage(vid, 0, 0, dw, dh);
-  const gray = toGray(kc.getImageData(0,0,dw,dh).data, dw, dh);
-
-  const r = cariSusunan(gray, dw, dh);
-  const skala = W/dw;
-  if(r.err){
-    siapBeruntun = 0;
-    pandu.className = 'panduan p-gagal';
-    pandu.textContent = 'Penanda sudut belum terbaca, sejajarkan lembar dengan bingkai';
-    gambarBingkai(ctx, W, H, '#f2604f', null, skala);
-    return;
+async function simpanHasilAktif(){
+  const r = hasilAktif, v = nilaiHasil();
+  const rekam = {
+    id: idBaru(), sesiId: sesiAktif.id,
+    nama: $('hNama').value.trim(), sekolah: $('hSekolah').value.trim(),
+    jawaban: r.baca.map(b=>b.jwb||''), status: r.baca.map(b=>b.status),
+    ganti: r.baca.map(b=>b.revisi?1:0),
+    benar:v.benar, salah:v.salah, kosong:v.kosong, ragu:v.ragu, tipis:v.tipis,
+    diganti:v.ganti, skor:v.adaKunci?v.skor:null, waktu: Date.now()
+  };
+  if(setelanKini().simpanCitra){
+    const c = document.createElement('canvas');
+    const sk = 700/r.ow; c.width=700; c.height=Math.round(r.oh*sk);
+    c.getContext('2d').drawImage($('kanvasHasil'),0,0,c.width,c.height);
+    rekam.citra = c.toDataURL('image/jpeg', .6);
   }
-  if(r.luas < 0.34){
-    siapBeruntun = 0;
-    pandu.className = 'panduan p-cari';
-    pandu.textContent = 'Terlalu jauh, dekatkan kamera ke lembar jawaban';
-    gambarBingkai(ctx, W, H, '#f0a92e', r.pts, skala);
-    return;
-  }
-  if(r.luas > 0.93){
-    siapBeruntun = 0;
-    pandu.className = 'panduan p-cari';
-    pandu.textContent = 'Terlalu dekat, mundurkan kamera agar seluruh tepi kertas masuk';
-    gambarBingkai(ctx, W, H, '#f0a92e', r.pts, skala);
-    return;
-  }
-  siapBeruntun++;
-  pandu.className = 'panduan p-siap';
-  pandu.textContent = 'Siap difoto' + (autoJepret ? ' — menunggu gambar stabil' : '');
-  gambarBingkai(ctx, W, H, '#3ecf9a', r.pts, skala);
-  if(autoJepret && siapBeruntun >= 3 && Date.now() > jedaJepret){ ambilFoto(); }
+  await simpan('hasil', rekam);
+  hasilAktif = null;
+  pesan('Tersimpan' + (rekam.nama ? ' — ' + rekam.nama : ''));
+  keLayar('layarPindai', false); bukaKamera();
 }
-
-async function ambilFoto(){
-  if(!stream || !vid.videoWidth) return;
-  jedaJepret = Date.now() + 1800; siapBeruntun = 0;
-  penuh.width = vid.videoWidth; penuh.height = vid.videoHeight;
-  penuh.getContext('2d').drawImage(vid, 0, 0);
-  const maxDim = +$('s4').value;
-  const sc = Math.min(1, maxDim/Math.max(penuh.width, penuh.height));
-  const w = Math.round(penuh.width*sc), h = Math.round(penuh.height*sc);
-  const kecil = document.createElement('canvas'); kecil.width = w; kecil.height = h;
-  const kc = kecil.getContext('2d', {willReadFrequently:true});
-  kc.drawImage(penuh, 0, 0, w, h);
-  const gray = toGray(kc.getImageData(0,0,w,h).data, w, h);
-
-  const kunci = bacaKunci();
-  const nilai = {benar: parseFloat($('bobot').value)||0,
-                 salah: parseFloat($('penalti').value)||0,
-                 kosong: parseFloat($('kosongVal').value)||0};
-  const opt = {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value, sOut:+$('s5').value, faktorTipis:+$('s6').value, lebarBatal:+$('s7').value, bedaGaris:+$('s8').value, autoAmbang:$('autoAmbang').checked,
-          nOpt: +$('varian').value};
-  const t0 = performance.now();
-  const r = prosesFoto(gray, w, h, opt);
-  const jam = new Date().toLocaleTimeString('id-ID');
-  r.nama = 'Kamera ' + jam; r.ms = Math.round(performance.now()-t0);
-  r.kunci = kunci; r.nilai = nilai;
-  hasilSemua.push(r);
-  $('unduh').disabled = !hasilSemua.some(x=>!x.err);
-  $('daftar').innerHTML = hasilSemua.map((x,i)=>
-    `<div data-i="${i}">${x.err ? '\u2715' : '\u2713'} ${x.nama}</div>`).join('');
-  tampil(hasilSemua.length-1);
-}
-$('jepret').addEventListener('click', ambilFoto);
-window.addEventListener('beforeunload', tutupKamera);
-
 
 /* =======================================================================
-   KALIBRASI OTOMATIS & PROFIL
+   DAFTAR HASIL & EKSPOR
    ======================================================================= */
-const BAWAAN = {s1:0.12, s2:0.06, s3:0.14, s4:1400, s5:60, s6:0.65, s7:0.55, s8:0.10};
-const KUNCI_SLIDER = ['s1','s2','s3','s4','s5','s6','s7','s8'];
-const LAIN = ['varian'];
-const LABEL_V = {s1:'v1', s2:'v2', s3:'v3', s4:'v4', s5:'v5', s6:'v6', s7:'v7'};
-
-function setSlider(id, nilai){
-  $(id).value = nilai;
-  $(LABEL_V[id]).textContent = $(id).value;      // dibaca ulang agar mengikuti langkah penggeser
+$('keDaftar').onclick = async () => { await gambarDaftarHasil(); keLayar('layarDaftar'); };
+async function gambarDaftarHasil(){
+  const h = (await hasilSesi(sesiAktif.id)).sort((a,b)=>b.waktu-a.waktu);
+  if(!h.length){
+    $('isiDaftarHasil').innerHTML = '<div class="kosongi"><span class="em">&#128203;</span>' +
+      'Belum ada lembar yang dipindai pada sesi ini.</div>';
+    return;
+  }
+  $('isiDaftarHasil').innerHTML = h.map(x => {
+    const tanda = [];
+    if(x.ragu) tanda.push(x.ragu+' perlu dicek');
+    if(x.diganti) tanda.push(x.diganti+' diganti');
+    const jam = new Date(x.waktu).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    return `<div class="item">
+      <div class="isi"><b>${lolos(x.nama||'(tanpa nama)')}</b>
+        <span>${lolos(x.sekolah||'-')} · ${jam}${tanda.length?' · '+tanda.join(', '):''}</span></div>
+      <div class="skor">${x.skor===null?'–':x.skor}</div>
+      <button class="ikon" data-hapus="${x.id}">&#128465;</button></div>`;
+  }).join('');
+  $('isiDaftarHasil').querySelectorAll('[data-hapus]').forEach(b => b.onclick = async () => {
+    if(!confirm('Hapus hasil pemindaian lembar ini?')) return;
+    await hapus('hasil', b.dataset.hapus); await gambarDaftarHasil(); pesan('Hasil dihapus');
+  });
 }
-function opsiSekarang(){
-  return {ambang:+$('s1').value, selisih:+$('s2').value, inset:+$('s3').value,
-          sOut:+$('s5').value, faktorTipis:+$('s6').value, lebarBatal:+$('s7').value,
-          bedaGaris:+$('s8').value, autoAmbang:false, nOpt: +$('varian').value};
-}
-function catatKalibrasi(teks, gagal){
-  const el = $('calLog');
-  el.style.display = 'block';
-  el.classList.toggle('err', !!gagal);
-  el.textContent = teks;
-}
-
-$('jalankanKalibrasi').addEventListener('click', async () => {
-  const fK = $('calKosong').files[0], fI = $('calIsi').files[0];
-  if(!fK || !fI){ catatKalibrasi('Kedua foto belum lengkap. Perlu satu lembar kosong dan satu lembar terisi penuh.', true); return; }
-  catatKalibrasi('Mengukur kedua lembar...');
-  const maxDim = +$('s4').value, opt = opsiSekarang();
-  try{
-    const a = await muatGray(fK, maxDim), b = await muatGray(fI, maxDim);
-    const rK = prosesFoto(a.gray, a.w, a.h, opt);
-    const rI = prosesFoto(b.gray, b.w, b.h, opt);
-    if(rK.err){ catatKalibrasi('Lembar kosong tidak terbaca: ' + rK.err, true); return; }
-    if(rI.err){ catatKalibrasi('Lembar terisi tidak terbaca: ' + rI.err, true); return; }
-
-    // lembar kosong: seluruh 250 kotak seharusnya bersih.
-    // Dipakai persentil 99,5 agar satu bintik kotoran tidak menggeser seluruh kalibrasi.
-    const semuaKosong = rK.rasioSemua.flat().sort((x,y)=>x-y);
-    const atapKosong = semuaKosong[Math.floor(semuaKosong.length*0.995)];
-
-    // lembar terisi: pisahkan kotak bercoretan dari kotak kosong dengan metode Otsu,
-    // sehingga lembar contoh tidak harus terisi seluruhnya.
-    const semuaIsi = rI.rasioSemua.flat();
-    const urut = semuaIsi.slice().sort((x,y)=>x-y);
-    let terbaik = null;
-    for(let i=1;i<urut.length;i++){
-      const kiri = urut.slice(0,i), kanan = urut.slice(i);
-      const rerata = a => a.reduce((p,q)=>p+q,0)/a.length;
-      const d = rerata(kiri) - rerata(kanan);
-      const skor = kiri.length*kanan.length*d*d;
-      if(!terbaik || skor > terbaik.skor) terbaik = {skor, dasar: urut[i]};
-    }
-    const dasarSilang = terbaik.dasar;
-    const jumlahCoretan = semuaIsi.filter(x => x >= dasarSilang).length;
-    const ambang = +(((atapKosong + dasarSilang)/2)).toFixed(2);
-    const batasBawah = Math.min(atapKosong*1.10, ambang*0.98);
-    const faktor = Math.max(0.40, Math.min(1.00, +(batasBawah/ambang).toFixed(2)));
-    setSlider('s1', ambang);
-    setSlider('s6', faktor);
-
-    const ujiK = prosesFoto(a.gray, a.w, a.h, opsiSekarang());
-    const ujiI = prosesFoto(b.gray, b.w, b.h, opsiSekarang());
-    const palsu = ujiK.baca.filter(x=>x.status!=='kosong').length;
-    const terbaca = ujiI.baca.filter(x=>x.status==='ok').length;
-    catatKalibrasi(
-`KALIBRASI SELESAI
-  kotak kosong tertinggi   : ${atapKosong.toFixed(3)}   (dari 250 kotak lembar kosong)
-  coretan terpudar         : ${dasarSilang.toFixed(3)}   (${jumlahCoretan} coretan terdeteksi)
-  celah aman               : ${(dasarSilang-atapKosong).toFixed(3)}
-
-  ambang minimum ditetapkan: ${ambang}
-  zona coretan tipis       : ${faktor}  (setara rasio ${(ambang*faktor).toFixed(3)})
-
-  verifikasi ulang -> lembar kosong: ${palsu} deteksi palsu dari 50 nomor
-                      lembar terisi: ${terbaca} dari 50 nomor terbaca jelas`);
-  }catch(ex){ catatKalibrasi('Gagal memproses: ' + ex.message, true); }
-});
-
-$('simpanProfil').addEventListener('click', () => {
-  const profil = {}; KUNCI_SLIDER.forEach(k => profil[k] = +$(k).value);
-  LAIN.forEach(k => profil[k] = $(k).value);
-  profil.dibuat = new Date().toISOString();
-  const url = URL.createObjectURL(new Blob([JSON.stringify(profil,null,2)], {type:'application/json'}));
-  const a = document.createElement('a');
-  a.href = url; a.download = 'profil-kalibrasi.json'; a.click();
-  URL.revokeObjectURL(url);
-  catatKalibrasi('Profil kalibrasi disimpan. Berkas ini dapat dibagikan ke perangkat lain agar seluruh operator memakai penyetelan yang sama.');
-});
-$('muatProfilBtn').addEventListener('click', () => $('muatProfil').click());
-$('muatProfil').addEventListener('change', async e => {
-  const f = e.target.files[0]; if(!f) return;
-  try{
-    const p = JSON.parse(await f.text());
-    let n = 0;
-    KUNCI_SLIDER.forEach(k => { if(typeof p[k] === 'number'){ setSlider(k, p[k]); n++; } });
-    LAIN.forEach(k => { if(p[k] !== undefined){ $(k).value = p[k]; n++; } });
-    catatKalibrasi(`Profil dimuat, ${n} nilai penyetelan diterapkan.`);
-  }catch(ex){ catatKalibrasi('Berkas profil tidak dapat dibaca: ' + ex.message, true); }
-});
-$('resetProfil').addEventListener('click', () => {
-  KUNCI_SLIDER.forEach(k => setSlider(k, BAWAAN[k]));
-  catatKalibrasi('Seluruh penyetelan dikembalikan ke nilai bawaan.');
-});
-
-$('unduh').addEventListener('click', () => {
-  const head = ['berkas','nama_peserta','nama_sekolah','benar','salah','tanpa_jawaban',
-    'nilai_benar','pengurangan_salah','skor_akhir','ragu','coretan_tipis','jawaban_diganti','kosong']
+$('keEkspor').onclick = async () => {
+  const h = (await hasilSesi(sesiAktif.id)).sort((a,b)=>a.waktu-b.waktu);
+  if(!h.length){ pesan('Belum ada hasil untuk diekspor'); return; }
+  const kepala = ['sesi','nama_peserta','nama_sekolah','waktu','benar','salah','tanpa_jawaban',
+    'skor_akhir','perlu_dicek','coretan_tipis','jawaban_diganti']
     .concat(Array.from({length:50},(_,i)=>'j'+(i+1)))
     .concat(Array.from({length:50},(_,i)=>'st'+(i+1)));
-  const baris = [head.join(',')];
-  for(const r of hasilSemua){
-    if(r.err) continue;
-    let benar=0, salah=0, ragu=0, kosong=0, tanpaJawab=0, tipis=0, revisi=0;
-    for(const b of r.baca){
-      if(b.status==='ragu') ragu++;
-      if(b.status==='tipis') tipis++;
-      if(b.revisi) revisi++;
-      if(b.status==='kosong') kosong++;
-      if(!r.kunci || !r.kunci[b.n]) continue;
-      if(b.jwb===null) tanpaJawab++; else if(b.jwb===r.kunci[b.n]) benar++; else salah++;
-    }
-    const nb = benar*r.nilai.benar, ns = salah*r.nilai.salah, nk = tanpaJawab*r.nilai.kosong;
-    const sk = r.kunci ? +(nb - ns + nk).toFixed(2) : '';
-    baris.push([r.nama,'','', benar, salah, tanpaJawab, nb, ns, sk, ragu, tipis, revisi, kosong]
-      .concat(r.baca.map(b=>b.jwb||''))
-      .concat(r.baca.map(b=>b.status)).join(','));
+  const aman = t => `"${String(t==null?'':t).replace(/"/g,'""')}"`;
+  const baris = [kepala.join(',')];
+  for(const x of h){
+    baris.push([aman(sesiAktif.nama), aman(x.nama), aman(x.sekolah),
+      aman(new Date(x.waktu).toISOString()), x.benar, x.salah, x.kosong,
+      x.skor===null?'':x.skor, x.ragu, x.tipis, x.diganti]
+      .concat(x.jawaban).concat(x.status).join(','));
   }
-  const url = URL.createObjectURL(new Blob([baris.join('\n')], {type:'text/csv'}));
+  const url = URL.createObjectURL(new Blob(['\ufeff'+baris.join('\n')], {type:'text/csv;charset=utf-8'}));
   const a = document.createElement('a');
-  a.href = url; a.download = 'hasil-pemindaian.csv'; a.click();
+  a.href = url; a.download = `hasil-${sesiAktif.nama.replace(/[^\w]+/g,'-')}.csv`; a.click();
   URL.revokeObjectURL(url);
-});
+  pesan(h.length + ' lembar diekspor');
+};
+
+/* =======================================================================
+   MULAI
+   ======================================================================= */
+(async function(){
+  await bukaDB();
+  const set = await ambil('setelan','utama');
+  terapkanSetelan(set ? set.nilai : BAWAAN);
+  await muatBeranda();
+  keLayar('layarBeranda', false);
+})();
+window.addEventListener('beforeunload', tutupKamera);
 </script>
 </body>
 </html>
