@@ -334,7 +334,6 @@
 <div class="pesan" id="pesan"></div>
 
 <script>
-
 /* =======================================================================
    PETA TEMPLATE  — seluruh koordinat dalam sentimeter pada kertas A4
    ======================================================================= */
@@ -582,7 +581,12 @@ function cariGaris(flat, ow, oh, S, arah, a0, a1, b0, b1, k){
 }
 
 /* Cari deret garis berjarak paling seragam, lalu cocokkan dengan model top + i*jarak */
-function cocokkanDeret(garis, jumlah, jarakKira, toleransi){
+/* Cari deret garis berjarak seragam yang paling cocok dengan model awal + k*jarak.
+   Titik awal hanya dicari pada rentang yang wajar, lalu awal dan jarak disempurnakan
+   dengan regresi kuadrat terkecil atas seluruh garis yang cocok. Penyempurnaan ini
+   penting: selisih kecil pada perkiraan jarak antar baris akan menumpuk ke bawah dan
+   membuat garis-garis terbawah dianggap tidak cocok bila jarak tidak dikoreksi. */
+function cocokkanDeret(garis, jumlah, jarakKira, toleransi, rentangAwal){
   if(garis.length < Math.max(4, jumlah*0.5)) return null;
   const jarak = [];
   for(let i=1;i<garis.length;i++){
@@ -591,21 +595,38 @@ function cocokkanDeret(garis, jumlah, jarakKira, toleransi){
   }
   if(jarak.length < 3) return null;
   jarak.sort((a,b)=>a-b);
-  const rowH = jarak[Math.floor(jarak.length/2)];
-  // pilih titik awal yang membuat paling banyak garis jatuh pada kelipatan rowH
+  const jarakAwal = jarak[Math.floor(jarak.length/2)];
+
   let terbaik = null;
-  for(const g0 of garis){
-    let cocok = 0, sisaTotal = 0;
-    for(const g of garis){
-      const k = Math.round((g-g0)/rowH);
-      if(k < 0 || k >= jumlah) continue;
-      const sisa = Math.abs(g - (g0 + k*rowH));
-      if(sisa < toleransi){ cocok++; sisaTotal += sisa; }
+  for(const a of garis){
+    if(rentangAwal && (a < rentangAwal[0] || a > rentangAwal[1])) continue;
+    let awal = a, jr = jarakAwal, pasangan = [];
+    for(let ulang=0; ulang<4; ulang++){
+      const peta = new Map();
+      for(const g of garis){
+        const k = Math.round((g-awal)/jr);
+        if(k < 0 || k >= jumlah) continue;
+        const sisa = Math.abs(g - (awal + k*jr));
+        if(sisa >= toleransi) continue;
+        if(!peta.has(k) || sisa < peta.get(k).sisa) peta.set(k, {g, sisa});
+      }
+      pasangan = [...peta.entries()].map(([k,v]) => [k, v.g]);
+      if(pasangan.length < 3) break;
+      let sk=0, sg=0, skk=0, skg=0; const n = pasangan.length;
+      for(const [k,g] of pasangan){ sk+=k; sg+=g; skk+=k*k; skg+=k*g; }
+      const pembagi = n*skk - sk*sk;
+      if(Math.abs(pembagi) < 1e-9) break;
+      jr = (n*skg - sk*sg)/pembagi;
+      awal = (sg - jr*sk)/n;
     }
-    if(!terbaik || cocok > terbaik.cocok) terbaik = {cocok, g0, sisaTotal};
+    let sisaTotal = 0;
+    for(const [k,g] of pasangan) sisaTotal += Math.abs(g - (awal + k*jr));
+    const calon = {awal, jarak: jr, cocok: pasangan.length, sisaTotal};
+    if(!terbaik || calon.cocok > terbaik.cocok ||
+       (calon.cocok === terbaik.cocok && calon.sisaTotal < terbaik.sisaTotal)) terbaik = calon;
   }
   if(!terbaik || terbaik.cocok < Math.max(4, jumlah*0.55)) return null;
-  return {awal: terbaik.g0, jarak: rowH, cocok: terbaik.cocok};
+  return terbaik;
 }
 
 function nilaiKisi(flat, ow, oh, S, awal, jarak, jumlah, arah, q0, q1){
@@ -642,7 +663,7 @@ function selaraskanKisi(flat, ow, oh, S, nOpt){
       } else gab.push({s:g, n:1});
     }
     const garisH = gab.filter(t=>t.n>=2).map(t=>t.s/t.n);
-    const fh = cocokkanDeret(garisH, 18, DEF.rowH, 0.07);
+    const fh = cocokkanDeret(garisH, 18, DEF.rowH, 0.07, [9.0, 10.5]);
     if(!fh || fh.jarak <= 0.65 || fh.jarak >= 0.95 || fh.awal <= 9.0 || fh.awal >= 10.5) continue;
     const nilai = nilaiKisi(flat, ow, oh, S, fh.awal, fh.jarak, 18, 'h', xa, xb);
     if(nilai < terbaikH.nilai - 4) terbaikH = {nilai, fit:fh};
@@ -657,7 +678,7 @@ function selaraskanKisi(flat, ow, oh, S, nOpt){
     let acuan = nilaiKisi(flat, ow, oh, S, bb.x0, bb.lebar, nOpt+1, 'v', yA, yB);
     for(const t of [0.85, 0.82]){
       const gv = cariGaris(flat, ow, oh, S, 'v', bb.x0-0.35, bb.x0+nOpt*bb.lebar+0.35, yA, yB, t);
-      const fv = cocokkanDeret(gv, nOpt+1, bb.lebar, 0.08);
+      const fv = cocokkanDeret(gv, nOpt+1, bb.lebar, 0.08, [bb.x0-0.4, bb.x0+0.4]);
       if(!fv || fv.jarak < bb.lebar*0.88 || fv.jarak > bb.lebar*1.15 || Math.abs(fv.awal-bb.x0) > 0.4) continue;
       const nilai = nilaiKisi(flat, ow, oh, S, fv.awal, fv.jarak, nOpt+1, 'v', yA, yB);
       if(nilai < acuan - 4){ acuan = nilai; geo.blok[k] = {x0: fv.awal, lebar: fv.jarak}; }
@@ -751,9 +772,19 @@ function prosesFoto(gray, w, h, opt){
      kotak terbersih pada nomor tersebut. Cetakan huruf ABCDE, garis kotak, dan bayangan setempat
      muncul merata pada kelima kotak, sehingga ikut hilang saat dikurangkan. Yang tersisa murni
      selisih akibat coretan peserta. */
-  const relatif = rasioSemua.map(rat => {
-    const u = rat.slice().sort((a,b)=>a-b);
-    const dasar = (u[0]+u[1])/2;
+  /* Rasio relatif: setiap kotak dikurangi dasar setempat, yaitu kotak terbersih pada
+     nomor yang sama. Cetakan huruf, garis kotak, dan bayangan setempat muncul merata pada
+     seluruh kotak satu baris sehingga ikut hilang saat dikurangkan.
+     Dasar sengaja diambil dari SATU kotak terbersih, bukan rerata dua kotak, karena peserta
+     yang membatalkan beberapa jawaban bisa menyisakan hanya satu kotak kosong pada nomornya;
+     rerata dua kotak akan ikut menyerap tinta jawaban akhir dan membuatnya tak terbaca.
+     Bila seluruh kotak pada satu nomor ternyata tergores, kotak terbersihnya pun berisi tinta,
+     sehingga dasar diganti dengan tingkat kotak kosong yang lazim pada lembar tersebut. */
+  const minBaris = rasioSemua.map(rat => Math.min(...rat));
+  const urutMin = minBaris.slice().sort((a,b)=>a-b);
+  const dasarLembar = urutMin[Math.floor(urutMin.length/2)];
+  const relatif = rasioSemua.map((rat, k) => {
+    const dasar = (minBaris[k] > dasarLembar + 0.10) ? dasarLembar : minBaris[k];
     return rat.map(v => Math.max(0, v - dasar));
   });
   const ukur = (opt.bedaLokal === false) ? rasioSemua : relatif;
@@ -843,6 +874,7 @@ function prosesFoto(gray, w, h, opt){
 
   return {flat, ow, oh, sOut, geo, baca, rasioSemua, ambangPakai, sumber, info, dicoba, skor:best.sc.toFixed(2), kandidat:best.kandidat};
 }
+
 
 
 /* =======================================================================
